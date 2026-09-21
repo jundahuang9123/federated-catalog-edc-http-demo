@@ -16,6 +16,12 @@ A reasonable small-demo starting point is 2 vCPUs, 4 GB RAM and 20 GB of persist
 
 If the supervisor provides an institutional reverse proxy, a subpath-only URL, private-only DNS, or a server without Docker, this deployment needs adaptation. Do not guess or disable certificate verification. The provided layout expects two HTTPS origins without URL subpaths.
 
+## Verified TMDT defaults
+
+The user-provided portal is [solid-dataspace-test.tmdt.info](https://solid-dataspace-test.tmdt.info/). Its [public configuration](https://solid-dataspace-test.tmdt.info/config.js) recommends the TMDT Solid provider. The provider's [OIDC metadata](https://solid-community-server.tmdt.info/.well-known/openid-configuration) reports the exact issuer `https://solid-community-server.tmdt.info/`; retain the trailing slash. The portal itself serves HTML at the OIDC discovery path and must not be used as the issuer.
+
+The prototype registry `https://solid-community-server.tmdt.info/semanticdatacatalog/public/test/` was checked on 2026-09-21: it serves RDF, contains two member resources, and the existing registry reader resolves two WebIDs. These are now the example configuration defaults. Confirm the intended participant memberships before publishing. This read-only check does not establish control of those identities, Pod access, or successful browser authentication.
+
 ## Environment
 
 Copy `.env.example` to `.env`, restrict its filesystem permissions (`chmod 600 .env`), and replace placeholders. It contains no working secrets.

@@ -28,6 +28,8 @@ This private repository requires your normal GitHub authentication to clone. Set
 
 Open `https://<CATALOG_HOST>` and `https://<PUBLISHER_HOST>`. Both hostnames may point to the same server. The publisher is a static browser application served by Caddy; the server still does not contain a Solid Pod service.
 
+The TMDT portal and verified login-provider defaults are documented in [the deployment guide](docs/DEPLOYMENT.md#verified-tmdt-defaults). The prototype test registry is prefilled; confirm the intended participant memberships.
+
 ## What to obtain from the supervisor
 
 - Linux server access: hostname/IP, SSH username and permitted authentication method, OS and CPU architecture, Docker/Compose availability, available memory and disk.

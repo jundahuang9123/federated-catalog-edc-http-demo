@@ -29,3 +29,9 @@ The publisher dependency audit initially reported 12 advisories. After reviewing
 The local Docker engine could not be started because computer-use permission was unavailable. The [GitHub Actions integration run](https://github.com/jundahuang9123/solid-federated-catalog-demo/actions/runs/34944904684) instead passed on Linux: real Fuseki 5.1.0 startup, publication, discovery, query, membership failure, replacement/isolation and persistence through complete container recreation. The first run exposed a readiness-probe connection-reset race; retry handling was fixed and the rerun passed. The browser SPARQL page was also exercised with offline fixtures and returned the two expected semantic matches.
 
 Python dependencies are constrained to the tested environment (`catalog/constraints.txt`); publisher dependencies are locked. The production proxy image builds and Caddy validates its HTTPS configuration in CI. Compose configuration validation copies the example environment first, matching the documented operator workflow. Remote DNS/TLS and real TMDT acceptance remain pending. P10 semantic-model ingestion is intentionally deferred.
+
+## TMDT endpoint confirmation — 2026-09-21
+
+The user identified `https://solid-dataspace-test.tmdt.info/` as the portal in use. Its public config advertises the TMDT Solid provider; discovery metadata confirms issuer `https://solid-community-server.tmdt.info/`. The prototype test registry is publicly readable, and the unmodified registry contract resolves two member WebIDs. No participant account, permission or remote data was modified. The issuer and prototype registry defaults are now populated; the intended participant identities and server details remain pending.
+
+The complete [verification run for the preceding implementation](https://github.com/jundahuang9123/solid-federated-catalog-demo/actions/runs/34971850000) passed all catalog, publisher, container persistence and production proxy/configuration checks.

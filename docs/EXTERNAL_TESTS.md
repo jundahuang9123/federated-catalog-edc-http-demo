@@ -10,9 +10,10 @@ Fill in non-secret operational values:
 | Server OS / architecture | pending |
 | Catalog HTTPS origin | pending |
 | Publisher HTTPS origin | pending |
-| Exact TMDT issuer | pending |
+| TMDT dataspace portal | https://solid-dataspace-test.tmdt.info/ (user-provided) |
+| Exact TMDT issuer | https://solid-community-server.tmdt.info/ (metadata verified 2026-09-21) |
 | Expected token audience | pending |
-| Registry container URL | pending |
+| Registry container URL | https://solid-community-server.tmdt.info/semanticdatacatalog/public/test/ (prototype default, contract verified; confirm intended memberships) |
 | A WebID / Pod catalog URL | pending |
 | B WebID / Pod catalog URL | pending |
 | Unregistered C WebID | pending |
