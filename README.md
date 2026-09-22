@@ -1,6 +1,6 @@
 # Federated Catalog — EDC HTTP Boundary Demo
 
-This repository demonstrates a federated catalog accepting DCAT/RDF snapshots over an authenticated HTTP boundary. A small command-line simulator acts as the last step of a hypothetical EDC-side adapter: it selects a participant credential and sends `POST /catalog`.
+This repository demonstrates a federated catalog accepting DCAT/RDF snapshots over an authenticated HTTP boundary. An individually runnable browser publisher and a command-line simulator act as the last step of a hypothetical EDC-side adapter: they send a participant credential with `POST /catalog`.
 
 **Scope:** the simulator proves the HTTP/DCAT ingestion boundary that an EDC-side adapter could call. It does not implement Eclipse EDC, Dataspace Protocol (DSP), contract negotiation, policy enforcement, an EDC control plane, or an EDC data plane. The bearer tokens are demo credentials configured by the catalog operator; they are not EDC or DSP credentials.
 
@@ -18,7 +18,7 @@ EDC HTTP adapter simulator
                      discovery API, UI and read-only SPARQL
 ```
 
-The deployed service needs one DNS name. There is no participant publisher application in this demo. The command-line simulator is the push-side client.
+The deployed service needs one DNS name. Each participant can run the optional dummy publisher locally; it needs no domain or inbound internet port. The command-line simulator is also available.
 
 ## What the demo shows
 
@@ -33,6 +33,7 @@ Only public demonstration metadata belongs in this catalog. Discovery and query 
 
 ## Repository layout
 
+- `publisher/` — standalone local browser sender for individual testing and demos; no EDC runtime.
 - `catalog/` — FastAPI ingestion, validation, discovery, UI and Fuseki client.
 - `scripts/edc_http_simulator.py` — command-line client for the simulated EDC adapter boundary.
 - `demo-data/` — two participant snapshots, an invalid payload and SPARQL examples.
@@ -68,7 +69,19 @@ curl --fail https://<CATALOG_HOST>/ready
 
 The UI is at `https://<CATALOG_HOST>/`.
 
-## Send the first two snapshots
+## Start your individual dummy publisher
+
+After obtaining this repository (or just its `publisher/` folder), run with Python 3.11+:
+
+```bash
+python3 publisher/server.py
+```
+
+Open http://127.0.0.1:8787, enter the catalog URL and **your own token**, choose a DCAT file and publish. No Python dependencies or publisher domain are needed. The catalog operator must provision your token first. This is a testing/demo HTTP sender, not an Eclipse EDC connector.
+
+See [individual setup, Docker alternative and usage](publisher/README.md).
+
+## Send the first two snapshots with the CLI
 
 The simulator reads the token for `--participant` from `EDC_DEMO_PARTICIPANTS` in `.env` and never prints it.
 
@@ -97,6 +110,7 @@ python3 -m venv .venv
 .venv/bin/pip install -c catalog/constraints.txt -e './catalog[dev]'
 (cd catalog && ../.venv/bin/pytest -q)
 .venv/bin/python -m unittest scripts.test_edc_http_simulator
+.venv/bin/python -m unittest discover -s publisher -p 'test_*.py'
 
 # Requires a running Docker engine and uses an isolated disposable project.
 .venv/bin/python scripts/integration_test.py

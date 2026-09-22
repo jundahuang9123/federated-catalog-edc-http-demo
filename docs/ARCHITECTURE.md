@@ -82,4 +82,4 @@ The readiness endpoint checks Fuseki and the participant configuration. The part
 
 The index exposes metadata through its discovery and query interfaces. It has no per-participant read authorization. Store only metadata approved for this public demonstration.
 
-The deployment uses one catalog host and has no browser publisher. It does not connect to external participant storage or identity infrastructure. Those systems can remain part of a broader project architecture, but they are outside the path established by this repository.
+The central deployment uses one catalog host. An optional, separate local browser publisher in `publisher/` sends requests through its own Python service; it is not hosted by the catalog and needs no publisher domain. See [individual setup](../publisher/README.md). It does not connect to external participant storage or identity infrastructure. Those systems can remain part of a broader project architecture, but they are outside the path established by this repository.

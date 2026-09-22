@@ -1,0 +1,8 @@
+name: edc-dummy-publisher
+services:
+  publisher:
+    build: .
+    ports: ["127.0.0.1:8787:8787"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]

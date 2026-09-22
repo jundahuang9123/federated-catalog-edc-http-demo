@@ -22,13 +22,16 @@ jobs:
         run: pip install -c catalog/constraints.txt -e './catalog[dev]'
       - name: Lint catalog
         run: |
-          ruff check catalog scripts
-          ruff format --check catalog scripts
+          ruff check catalog scripts publisher
+          ruff format --check catalog scripts publisher
       - name: Run catalog tests
         run: pytest -q
         working-directory: catalog
       - name: Run EDC HTTP simulator tests
         run: python -m unittest -v scripts.test_edc_http_simulator
+
+      - name: Run individual publisher tests
+        run: python -m unittest discover -s publisher -p 'test_*.py' -v
 
   deployment:
     runs-on: ubuntu-latest
@@ -51,6 +54,9 @@ jobs:
           docker compose config --quiet
           docker compose -f docker-compose.integration.yml config --quiet
           docker compose -f catalog/docker-compose.yaml config --quiet
+          docker compose -f publisher/compose.yaml config --quiet
+      - name: Build individual publisher
+        run: docker compose -f publisher/compose.yaml build
       - name: Validate Caddy configuration
         run: |
           docker run --rm \

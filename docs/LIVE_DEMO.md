@@ -4,7 +4,7 @@
 
 Use this wording at the start:
 
-> This demonstration starts at a custom HTTP delivery boundary. The command-line tool represents the last step an adapter beside an EDC connector could perform: it sends an authenticated DCAT/RDF snapshot to the federated catalog. It does not run Eclipse EDC or demonstrate DSP, contract negotiation, policy enforcement, a control plane, or a data plane.
+> This demonstration starts at a custom HTTP delivery boundary. The local dummy publisher or command-line tool represents the last step an adapter beside an EDC connector could perform: it sends an authenticated DCAT/RDF snapshot to the federated catalog. It does not run Eclipse EDC or demonstrate DSP, contract negotiation, policy enforcement, a control plane, or a data plane.
 
 Calling the tool an **EDC HTTP adapter simulator** keeps the architectural intention clear without presenting it as an EDC connector.
 
@@ -140,3 +140,7 @@ Wait for `/ready`, then refresh the UI. The accepted participant snapshots remai
 - the explicit scope statement used in the presentation.
 
 Exclude bearer tokens, `.env` contents, Fuseki credentials and private server information from screenshots and reports.
+
+## Optional individual browser sender
+
+Run `python3 publisher/server.py` on each participant machine and open http://127.0.0.1:8787. Enter the same deployed catalog URL with a different operator-issued token for each participant. Select the A/B fixtures used above and click Publish. The HTTP contract and graph replacement behavior are identical to the CLI. This is a dummy for individual testing and demos, not a running EDC connector. See [publisher setup](../publisher/README.md).
