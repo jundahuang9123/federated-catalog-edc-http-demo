@@ -20,6 +20,19 @@ EDC HTTP adapter simulator
 
 The deployed service needs one DNS name. Each participant can run the optional dummy publisher locally; it needs no domain or inbound internet port. The command-line simulator is also available.
 
+## A catalog of catalogs
+
+Each dummy publisher owns **one catalog snapshot**. Every successful push replaces that publisher’s entire previous snapshot, including removing datasets omitted from the new version. Changing the catalog IRI does not create a second catalog for that publisher. Other publishers are untouched.
+
+The federated catalog lists the contributed catalogs and searches their datasets together. Each publisher retains a separate named graph and every dataset result retains its publisher and catalog. Shared RDF identifiers allow SPARQL joins; contributions are not silently merged. All metadata is publicly readable.
+
+- `GET /catalogs` lists published catalogs, their publishers and dataset counts.
+- `GET /datasets?q=wall` searches across dataset titles, descriptions, keywords, identifiers and sources (case-insensitive substring matching).
+- `GET /datasets/detail?dataset_id=...&graph=...` reads a dataset from its source graph. Use the graph returned with the dataset; omitting it returns HTTP 409 if the identifier occurs in several sources.
+- The browser provides a catalog list, combined dataset search and a SPARQL editor. `POST /sparql` accepts read-only SELECT/ASK queries across the stored graphs.
+
+A push must contain exactly one `dcat:Catalog` with an IRI and link all its datasets using `dcat:dataset`, optionally through dataset series. A valid catalog with no datasets clears that publisher’s old dataset listings. A malformed or rejected push preserves the previous snapshot.
+
 ## What the demo shows
 
 - A configured token identifies one simulated participant.

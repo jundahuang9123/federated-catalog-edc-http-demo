@@ -2,6 +2,7 @@
 const state = {
   datasets: [],
   selectedId: "",
+  selectedGraph: "",
   filter: "",
 };
 
@@ -20,6 +21,9 @@ const el = {
   detailId: document.querySelector("#detailId"),
   detailProvider: document.querySelector("#detailProvider"),
   detailTypes: document.querySelector("#detailTypes"),
+  catalogRows: document.querySelector("#catalogRows"),
+  catalogEmpty: document.querySelector("#catalogEmpty"),
+  detailCatalog: document.querySelector("#detailCatalog"),
   rdfGraph: document.querySelector("#rdfGraph"),
 };
 
@@ -44,7 +48,7 @@ const escapeHtml = (value) =>
 const matchesFilter = (dataset) => {
   const query = state.filter.trim().toLowerCase();
   if (!query) return true;
-  return [dataset.title, dataset.provider, dataset.type, dataset.dataset_id]
+  return [dataset.title, dataset.provider, dataset.type, dataset.dataset_id, dataset.metadata?.catalog_id, ...(dataset.metadata?.search_terms || [])]
     .map(text)
     .some((value) => value.toLowerCase().includes(query));
 };
@@ -71,8 +75,22 @@ async function loadStatus() {
   setStatusValue(el.fusekiStatus, dependencies.fuseki);
 }
 
+async function loadCatalogs() {
+  const response = await fetch("/catalogs");
+  if (!response.ok) throw new Error("Cannot load catalogs");
+  const catalogs = await response.json();
+  el.catalogRows.innerHTML = "";
+  el.catalogEmpty.hidden = catalogs.length > 0;
+  for (const catalog of catalogs) {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td><strong>${escapeHtml(catalog.title || shortIri(catalog.catalog_id))}</strong><br><span class="mono">${escapeHtml(catalog.catalog_id)}</span></td><td class="mono">${escapeHtml(catalog.provider)}</td><td>${Number(catalog.dataset_count)}</td>`;
+    el.catalogRows.appendChild(row);
+  }
+}
+
 async function loadDatasets() {
   const response = await fetch("/datasets");
+  if (!response.ok) throw new Error("Cannot load datasets");
   state.datasets = await response.json();
   renderRows();
 }
@@ -84,28 +102,37 @@ function renderRows() {
 
   visible.forEach((dataset) => {
     const row = document.createElement("tr");
-    row.className = dataset.dataset_id === state.selectedId ? "selected" : "";
+    row.className = dataset.dataset_id === state.selectedId && dataset.metadata?.graph === state.selectedGraph ? "selected" : "";
     row.innerHTML = `
       <td><strong>${escapeHtml(dataset.title || shortIri(dataset.dataset_id))}</strong><br>
         <span class="mono">${escapeHtml(dataset.dataset_id)}</span></td>
-      <td class="mono">${escapeHtml(dataset.provider || "-")}</td>
+      <td class="mono">${escapeHtml(dataset.provider || "-")}<br>${escapeHtml(dataset.metadata?.catalog_id || "")}</td>
       <td>${escapeHtml(dataset.type || "-")}</td>
     `;
-    row.addEventListener("click", () => selectDataset(dataset.dataset_id));
+    row.addEventListener("click", () => selectDataset(dataset.dataset_id, dataset.metadata?.graph));
     el.datasetRows.appendChild(row);
   });
 }
 
-async function selectDataset(datasetId) {
+async function selectDataset(datasetId, graph) {
   state.selectedId = datasetId;
+  state.selectedGraph = graph;
+  el.detailContent.hidden = true;
   renderRows();
-  const response = await fetch(`/datasets/detail?dataset_id=${encodeURIComponent(datasetId)}`);
-  if (!response.ok) return;
+  const response = await fetch(`/datasets/detail?dataset_id=${encodeURIComponent(datasetId)}&graph=${encodeURIComponent(graph)}`);
+  if (state.selectedId !== datasetId || state.selectedGraph !== graph) return;
+  if (!response.ok) {
+    el.detailEmpty.hidden = false;
+    el.detailEmpty.textContent = "Dataset unavailable. Refresh the catalog list.";
+    return;
+  }
   const detail = await response.json();
+  if (state.selectedId !== datasetId || state.selectedGraph !== graph) return;
   el.detailEmpty.hidden = true;
   el.detailContent.hidden = false;
   el.detailTitle.textContent = detail.title || shortIri(detail.dataset_id);
   el.detailId.textContent = detail.dataset_id;
+  el.detailCatalog.textContent = detail.metadata?.catalog_id || "-";
   el.detailProvider.textContent = detail.provider || "-";
   el.detailTypes.textContent = (detail.types || []).map(shortIri).join(", ") || detail.type || "-";
   renderGraph(detail.triples || []);
@@ -169,8 +196,8 @@ function renderGraph(triples) {
 }
 
 async function refresh() {
-  await Promise.all([loadStatus(), loadDatasets()]);
-  if (state.selectedId) await selectDataset(state.selectedId);
+  await Promise.all([loadStatus(), loadCatalogs(), loadDatasets()]);
+  if (state.selectedId) await selectDataset(state.selectedId, state.selectedGraph);
 }
 
 el.searchInput.addEventListener("input", (event) => {

@@ -46,7 +46,7 @@ Your browser (localhost)
   -> discovery UI / SPARQL
 ```
 
-A successful push replaces the participant's complete snapshot. It is not an append or file-transfer operation. The referenced datasets themselves are not uploaded. HTTP 401 indicates invalid credentials; 422 indicates rejected RDF; 502 indicates a storage failure. A network error can occur after the catalog accepted a request, so check the catalog before concluding that nothing changed.
+Each publisher has exactly one catalog. A file must contain exactly one `dcat:Catalog` with an IRI and link every included dataset to it. A successful push replaces the participant's complete snapshot, even if the catalog IRI changes. A valid catalog with no datasets clears your old dataset listings. It is not an append or file-transfer operation. The referenced datasets themselves are not uploaded. HTTP 401 indicates invalid credentials; 422 indicates rejected RDF; 502 indicates a storage failure. A network error can occur after the catalog accepted a request, so check the catalog before concluding that nothing changed.
 
 ## Individual use boundary
 

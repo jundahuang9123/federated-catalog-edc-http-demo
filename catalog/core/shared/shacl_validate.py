@@ -4,7 +4,7 @@
 from pathlib import Path
 
 from pyshacl import validate
-from rdflib import RDF, Graph, Namespace
+from rdflib import RDF, Graph, Namespace, URIRef
 
 from core.interfaces.validation import ValidationGate, ValidationResult
 from core.shared.rdf import parse_rdf_payload
@@ -61,12 +61,26 @@ def validate_rdf(
     datasets = set(data_graph.subjects(RDF.type, DCAT.Dataset))
     if not catalogs:
         return ValidationResult(ok=False, errors=["RDF payload contains no dcat:Catalog"])
-    if not datasets:
-        return ValidationResult(ok=False, errors=["RDF payload contains no dcat:Dataset"])
-    if not any((catalog, DCAT.dataset, None) in data_graph for catalog in catalogs):
+    if len(catalogs) != 1:
+        return ValidationResult(ok=False, errors=["Push exactly one dcat:Catalog per publisher"])
+    catalog = next(iter(catalogs))
+    if not isinstance(catalog, URIRef):
+        return ValidationResult(ok=False, errors=["The dcat:Catalog must have an IRI"])
+    # Dataset series may connect catalog members indirectly.
+    members = set(data_graph.objects(catalog, DCAT.dataset))
+    pending = list(members)
+    while pending:
+        member = pending.pop()
+        for child in data_graph.objects(member, DCAT.seriesMember):
+            if child not in members:
+                members.add(child)
+                pending.append(child)
+    if datasets - members:
         return ValidationResult(
             ok=False,
-            errors=["No dcat:Catalog links to a dataset through dcat:dataset"],
+            errors=[
+                "The catalog must link to every dataset through dcat:dataset (or seriesMember); no unlinked datasets"
+            ],
         )
 
     try:

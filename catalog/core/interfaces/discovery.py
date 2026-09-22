@@ -7,6 +7,19 @@ class InvalidDatasetIdError(ValueError):
     """Raised when a caller supplies an unsafe or non-absolute dataset IRI."""
 
 
+class AmbiguousDatasetError(ValueError):
+    """A resource occurs in more than one publisher graph."""
+
+
+@dataclass(frozen=True)
+class CatalogResult:
+    catalog_id: str
+    provider: str | None = None
+    title: str | None = None
+    graph: str = ""
+    dataset_count: int = 0
+
+
 @dataclass(frozen=True)
 class DatasetResult:
     dataset_id: str
@@ -42,6 +55,10 @@ class CatalogStatus:
 
 class DiscoveryService(ABC):
     @abstractmethod
+    def list_catalogs(self) -> list[CatalogResult]:
+        raise NotImplementedError
+
+    @abstractmethod
     def list_datasets(self) -> list[DatasetResult]:
         raise NotImplementedError
 
@@ -50,5 +67,5 @@ class DiscoveryService(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_dataset(self, dataset_id: str) -> DatasetDetail | None:
+    def get_dataset(self, dataset_id: str, graph: str | None = None) -> DatasetDetail | None:
         raise NotImplementedError

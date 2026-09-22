@@ -151,6 +151,14 @@ if __name__ == "__main__":
             == 403
         )
 
+        status, catalogs = request("/catalogs")
+        assert status == 200 and len(catalogs) == 2
+        assert {row["provider"] for row in catalogs} == {PARTICIPANT_A, PARTICIPANT_B}
+        assert sum(row["dataset_count"] for row in catalogs) == 3
+        status, matches = request("/datasets?q=FRAME")
+        assert status == 200 and len(matches) == 1
+        assert matches[0]["metadata"]["catalog_id"].endswith("a-catalog")
+
         providers = dataset_providers()
         assert len(providers) == 3
         assert providers["https://example.org/live-demo/a-frame"] == PARTICIPANT_A

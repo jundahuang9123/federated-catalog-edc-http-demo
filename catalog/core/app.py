@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 
 from core.config import load_active_mode
 from core.deployment import validate_deployment
-from core.interfaces.discovery import InvalidDatasetIdError
+from core.interfaces.discovery import AmbiguousDatasetError, InvalidDatasetIdError
 
 logger = logging.getLogger(__name__)
 
@@ -154,14 +154,40 @@ def create_app() -> FastAPI:
         payload["status"] = status_payload
         return JSONResponse(status_code=200 if is_ready else 503, content=payload)
 
+    @app.get("/catalogs")
+    def catalogs() -> list[dict[str, object]]:
+        return [_as_dict(item) for item in mode.discovery.list_catalogs()]
+
     @app.get("/datasets")
-    def datasets() -> list[dict[str, object]]:
-        return [_as_dict(item) for item in mode.discovery.list_datasets()]
+    def datasets(q: str = Query(default="", max_length=500)) -> list[dict[str, object]]:
+        rows = [_as_dict(item) for item in mode.discovery.list_datasets()]
+        needle = q.strip().casefold()
+        return [
+            row
+            for row in rows
+            if not needle
+            or needle
+            in " ".join(
+                str(value or "")
+                for value in [
+                    row.get("dataset_id"),
+                    row.get("title"),
+                    row.get("provider"),
+                    row.get("type"),
+                    (row.get("metadata") or {}).get("catalog_id"),
+                    *((row.get("metadata") or {}).get("search_terms") or []),
+                ]
+            ).casefold()
+        ]
 
     @app.get("/datasets/detail", response_model=None)
-    def dataset_detail(dataset_id: str = Query(...)):
+    def dataset_detail(dataset_id: str = Query(...), graph: str | None = Query(default=None)):
         try:
-            detail = mode.discovery.get_dataset(dataset_id)
+            detail = mode.discovery.get_dataset(dataset_id, graph=graph)
+        except AmbiguousDatasetError as exc:
+            return JSONResponse(
+                status_code=409, content={"error": "ambiguous_dataset", "detail": str(exc)}
+            )
         except InvalidDatasetIdError as exc:
             return JSONResponse(
                 status_code=400,

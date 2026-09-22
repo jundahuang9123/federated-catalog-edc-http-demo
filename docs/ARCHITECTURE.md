@@ -83,3 +83,9 @@ The readiness endpoint checks Fuseki and the participant configuration. The part
 The index exposes metadata through its discovery and query interfaces. It has no per-participant read authorization. Store only metadata approved for this public demonstration.
 
 The central deployment uses one catalog host. An optional, separate local browser publisher in `publisher/` sends requests through its own Python service; it is not hosted by the catalog and needs no publisher domain. See [individual setup](../publisher/README.md). It does not connect to external participant storage or identity infrastructure. Those systems can remain part of a broader project architecture, but they are outside the path established by this repository.
+
+## Catalog of catalogs
+
+Each publisher owns one complete catalog snapshot in a token-derived named graph. The validation gate requires exactly one catalog with an IRI and membership links for every dataset. An empty catalog is valid. A new snapshot replaces the old one even if its catalog IRI changes.
+
+`GET /catalogs` exposes the contributed catalogs. Dataset discovery returns one entry per source graph and dataset identifier, with `metadata.catalog_id` and `metadata.graph`. Dataset details use the selected graph to avoid mixing descriptions from different publishers; an ambiguous unscoped lookup returns HTTP 409. Keyword search is case-insensitive substring filtering across the combined listings, available in the browser and with `/datasets?q=...`; it is not a ranked full-text index. All reads are public. SPARQL joins across named graphs remain available through the existing read-only endpoint.

@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-import re
-
-from rdflib import DCTERMS, RDF, Graph, Namespace
+from rdflib import Dataset, Namespace, URIRef
 
 from core.interfaces.store import CatalogStore
-from core.shared.participant_graph import participant_from_graph_uri
 
 DCAT = Namespace("http://www.w3.org/ns/dcat#")
 
@@ -52,66 +49,10 @@ class MemoryCatalogStore(CatalogStore):
         self.graphs[graph_id] = rdf_payload
 
     def query(self, sparql: str) -> list[dict[str, object]]:
-        if "COUNT(DISTINCT ?dataset)" in sparql:
-            datasets = set()
-            graphs_with_datasets = set()
-            for graph_id, rdf_payload in self.graphs.items():
-                graph = Graph().parse(data=rdf_payload, format="turtle")
-                for dataset in graph.subjects(RDF.type, DCAT.Dataset):
-                    datasets.add(str(dataset))
-                    graphs_with_datasets.add(graph_id)
-            return [
-                {
-                    "dataset_count": str(len(datasets)),
-                    "graph_count": str(len(graphs_with_datasets)),
-                }
-            ]
-
-        detail_match = re.search(r"BIND\(<([^>]+)> AS \?dataset\)", sparql)
-        if detail_match:
-            dataset_id = detail_match.group(1)
-            rows: list[dict[str, object]] = []
-            for graph_id, rdf_payload in self.graphs.items():
-                graph = Graph().parse(data=rdf_payload, format="turtle")
-                dataset = next(
-                    (
-                        subject
-                        for subject in graph.subjects(RDF.type, DCAT.Dataset)
-                        if str(subject) == dataset_id
-                    ),
-                    None,
-                )
-                if dataset is None:
-                    continue
-                title = next(graph.objects(dataset, DCTERMS.title), None)
-                subjects = {dataset}
-                subjects.update(graph.objects(dataset, DCAT.distribution))
-                for subject in subjects:
-                    for predicate, obj in graph.predicate_objects(subject):
-                        rows.append(
-                            {
-                                "graph": graph_id,
-                                "s": str(subject),
-                                "p": str(predicate),
-                                "o": str(obj),
-                                "title": str(title) if title else None,
-                                "type": str(DCAT.Dataset),
-                                "provider": participant_from_graph_uri(graph_id),
-                            }
-                        )
-            return rows
-
-        rows: list[dict[str, object]] = []
-        for graph_id, rdf_payload in self.graphs.items():
-            graph = Graph().parse(data=rdf_payload, format="turtle")
-            for dataset in graph.subjects(RDF.type, DCAT.Dataset):
-                title = next(graph.objects(dataset, DCTERMS.title), None)
-                rows.append(
-                    {
-                        "graph": graph_id,
-                        "dataset": str(dataset),
-                        "title": str(title) if title else None,
-                        "provider": participant_from_graph_uri(graph_id),
-                    }
-                )
-        return rows
+        dataset = Dataset()
+        for graph_id, payload in self.graphs.items():
+            dataset.graph(URIRef(graph_id)).parse(data=payload, format="turtle")
+        return [
+            {str(key): str(value) for key, value in row.asdict().items()}
+            for row in dataset.query(sparql)
+        ]

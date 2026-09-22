@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 
 from core.interfaces.discovery import (
+    AmbiguousDatasetError,
+    CatalogResult,
     CatalogStatus,
     DatasetDetail,
     DatasetResult,
@@ -45,44 +47,92 @@ class HttpDemoDiscovery(DiscoveryService):
         self.store = store
         self.registry = registry
 
+    def list_catalogs(self) -> list[CatalogResult]:
+        rows = self.store.query("""
+            PREFIX dcat: <http://www.w3.org/ns/dcat#>
+            PREFIX dct: <http://purl.org/dc/terms/>
+            SELECT ?graph ?catalog (MIN(COALESCE(STR(?label), "")) AS ?title)
+                   (COUNT(DISTINCT ?dataset) AS ?count)
+            WHERE {
+              GRAPH ?graph {
+                ?catalog a dcat:Catalog .
+                OPTIONAL { ?catalog dct:title ?label }
+                OPTIONAL {
+                  ?catalog dcat:dataset/dcat:seriesMember* ?dataset .
+                  ?dataset a dcat:Dataset .
+                }
+              }
+            } GROUP BY ?graph ?catalog ORDER BY STR(?catalog) STR(?graph)
+        """)
+        return [
+            CatalogResult(
+                catalog_id=str(row["catalog"]),
+                provider=participant_from_graph_uri(str(row["graph"])),
+                graph=str(row["graph"]),
+                title=str(row.get("title") or "") or None,
+                dataset_count=_int_value(row.get("count")),
+            )
+            for row in rows
+        ]
+
     def list_datasets(self) -> list[DatasetResult]:
         rows = self.store.query(
             """
             PREFIX dcat: <http://www.w3.org/ns/dcat#>
             PREFIX dct: <http://purl.org/dc/terms/>
 
-            SELECT ?graph ?dataset ?title
+            SELECT DISTINCT ?graph ?catalog ?dataset ?title ?description ?keyword
             WHERE {
               GRAPH ?graph {
+                ?catalog a dcat:Catalog ; dcat:dataset/dcat:seriesMember* ?dataset .
                 ?dataset a dcat:Dataset .
                 OPTIONAL { ?dataset dct:title ?title . }
+                OPTIONAL { ?dataset dct:description ?description . }
+                OPTIONAL { ?dataset dcat:keyword ?keyword . }
               }
             }
             ORDER BY LCASE(STR(?title)) STR(?dataset)
             """
         )
-        return [
-            DatasetResult(
-                dataset_id=str(row.get("dataset") or ""),
-                title=str(row["title"]) if row.get("title") else None,
-                type="dcat:Dataset",
-                provider=participant_from_graph_uri(str(row.get("graph") or "")),
-                metadata={"graph": str(row.get("graph") or ""), "mode": "http-demo"},
-            )
-            for row in rows
-        ]
+        # One listing per source and dataset, even with multilingual/repeated literals.
+        items = {}
+        for row in rows:
+            graph, dataset = str(row.get("graph") or ""), str(row.get("dataset") or "")
+            key = (graph, dataset)
+            if key not in items:
+                items[key] = DatasetResult(
+                    dataset_id=dataset,
+                    title=str(row.get("title") or "") or None,
+                    type="dcat:Dataset",
+                    provider=participant_from_graph_uri(graph),
+                    metadata={
+                        "graph": graph,
+                        "catalog_id": str(row.get("catalog") or ""),
+                        "mode": "http-demo",
+                        "search_terms": [],
+                    },
+                )
+            terms = items[key].metadata["search_terms"]
+            for field in ("title", "description", "keyword"):
+                value = str(row.get(field) or "")
+                if value and value not in terms:
+                    terms.append(value)
+        return list(items.values())
 
-    def get_dataset(self, dataset_id: str) -> DatasetDetail | None:
+    def get_dataset(self, dataset_id: str, graph: str | None = None) -> DatasetDetail | None:
         dataset_iri = _sparql_iri(dataset_id)
+        graph_filter = f"VALUES ?graph {{ {_sparql_iri(graph)} }}" if graph is not None else ""
         rows = self.store.query(
             f"""
             PREFIX dcat: <http://www.w3.org/ns/dcat#>
             PREFIX dct: <http://purl.org/dc/terms/>
 
-            SELECT ?graph ?s ?p ?o ?title ?type
+            SELECT DISTINCT ?graph ?catalog ?s ?p ?o ?title ?type
             WHERE {{
+              {graph_filter}
               GRAPH ?graph {{
                 BIND({dataset_iri} AS ?dataset)
+                ?catalog a dcat:Catalog ; dcat:dataset/dcat:seriesMember* ?dataset .
                 ?dataset a dcat:Dataset .
                 OPTIONAL {{ ?dataset dct:title ?title . }}
                 OPTIONAL {{ ?dataset a ?type . }}
@@ -103,6 +153,8 @@ class HttpDemoDiscovery(DiscoveryService):
         if not rows:
             return None
 
+        if len({str(row.get("graph")) for row in rows}) > 1:
+            raise AmbiguousDatasetError("Dataset occurs in multiple catalogs; supply its graph")
         graph = str(rows[0].get("graph") or "")
         types = sorted({str(row["type"]) for row in rows if row.get("type")})
         triples = [
@@ -119,7 +171,11 @@ class HttpDemoDiscovery(DiscoveryService):
             title=str(rows[0]["title"]) if rows[0].get("title") else None,
             type="dcat:Dataset",
             provider=participant_from_graph_uri(graph),
-            metadata={"graph": graph, "mode": "http-demo"},
+            metadata={
+                "graph": graph,
+                "mode": "http-demo",
+                "catalog_id": str(rows[0].get("catalog") or ""),
+            },
             types=types,
             triples=triples,
         )
@@ -131,12 +187,18 @@ class HttpDemoDiscovery(DiscoveryService):
                 PREFIX dcat: <http://www.w3.org/ns/dcat#>
 
                 SELECT
-                  (COUNT(DISTINCT ?dataset) AS ?dataset_count)
+                  (COUNT(?dataset) AS ?dataset_count)
                   (COUNT(DISTINCT ?graph) AS ?graph_count)
                 WHERE {
-                  GRAPH ?graph {
-                    ?dataset a dcat:Dataset .
-                  }
+                  { SELECT DISTINCT ?graph ?dataset WHERE {
+                    GRAPH ?graph {
+                      ?catalog a dcat:Catalog .
+                      OPTIONAL {
+                        ?catalog dcat:dataset/dcat:seriesMember* ?dataset .
+                        ?dataset a dcat:Dataset .
+                      }
+                    }
+                  } }
                 }
                 """
             )

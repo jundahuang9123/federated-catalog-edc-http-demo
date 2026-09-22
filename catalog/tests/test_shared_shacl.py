@@ -44,7 +44,7 @@ def test_validate_rdf_requires_catalog_dataset_link() -> None:
     )
 
     assert not result.ok
-    assert "links to a dataset" in result.errors[0]
+    assert "link to every dataset" in result.errors[0]
 
 
 def test_validate_rdf_rejects_remote_jsonld_context_without_fetching() -> None:

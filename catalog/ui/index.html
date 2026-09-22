@@ -13,7 +13,8 @@
       <header class="topbar">
         <div>
           <p class="eyebrow">EDC HTTP adapter simulation</p>
-          <h1>Federated Catalog Discovery</h1>
+          <h1>A catalog of publisher catalogs</h1>
+          <p>Each publisher contributes one catalog. Search all datasets together; every result retains its source.</p>
           <p>This demo exercises a custom HTTP ingestion boundary; it does not run Eclipse EDC or DSP.</p>
         </div>
         <section class="status-strip" aria-label="Catalog status">
@@ -36,10 +37,18 @@
         </section>
       </header>
 
+      <section aria-label="Published catalogs" class="dataset-panel">
+        <h2>Published catalogs</h2>
+        <p>Each new publication replaces only that publisher’s previous catalog.</p>
+        <table><thead><tr><th>Catalog</th><th>Publisher</th><th>Datasets</th></tr></thead>
+          <tbody id="catalogRows"></tbody></table>
+        <p id="catalogEmpty">No catalogs published yet.</p>
+      </section>
+
       <section class="toolbar" aria-label="Dataset filters">
         <label class="search">
           <span>Search</span>
-          <input id="searchInput" type="search" placeholder="Title, provider, type" />
+          <input id="searchInput" type="search" placeholder="Title, keyword, description, publisher or catalog" />
         </label>
         <button id="refreshButton" type="button">Refresh</button>
       </section>
@@ -50,7 +59,7 @@
             <thead>
               <tr>
                 <th>Title</th>
-                <th>Provider</th>
+                <th>Publisher / catalog</th>
                 <th>Type</th>
               </tr>
             </thead>
@@ -70,7 +79,7 @@
                 <dd id="detailId"></dd>
               </div>
               <div>
-                <dt>Provider</dt>
+                <dt>Publisher</dt>
                 <dd id="detailProvider"></dd>
               </div>
               <div>
@@ -78,6 +87,7 @@
                 <dd id="detailTypes"></dd>
               </div>
             </dl>
+            <p>Source catalog: <span id="detailCatalog" class="mono"></span></p>
             <h3>RDF Graph</h3>
             <div id="rdfGraph" class="rdf-graph"></div>
           </div>

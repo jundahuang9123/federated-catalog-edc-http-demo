@@ -60,7 +60,9 @@ Supported RDF media types:
 
 JSON-LD contexts must be embedded in the document. Remote `@context` documents and `@import` are rejected so ingestion never fetches caller-selected URLs.
 
-The body must be UTF-8, contain a `dcat:Catalog` that links to at least one `dcat:Dataset`, and pass the catalog's SHACL validation. The application limit defaults to 2 MiB through `CATALOG_MAX_INGEST_BYTES`; Caddy also enforces a 2 MB outer limit in the supplied deployment.
+The body must be UTF-8, contain exactly one `dcat:Catalog` identified by an IRI that links to every included `dcat:Dataset` through `dcat:dataset` (optionally followed by `dcat:seriesMember`), and pass the catalog's SHACL validation. The application limit defaults to 2 MiB through `CATALOG_MAX_INGEST_BYTES`; Caddy also enforces a 2 MB outer limit in the supplied deployment.
+
+A valid catalog with no datasets is accepted and removes that publisher’s previous dataset listings. Multiple catalogs and unlinked datasets are rejected with HTTP 422 before storage. Changing the catalog IRI still replaces the same token-owned snapshot.
 
 ### Curl example
 

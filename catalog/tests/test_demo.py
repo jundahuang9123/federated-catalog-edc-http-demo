@@ -1,5 +1,6 @@
 """End-to-end behavior with an in-memory transport standing in for Fuseki."""
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 from urllib.parse import parse_qs
@@ -29,6 +30,7 @@ TOKEN_B = "b" * 64
 @pytest.fixture
 def system(monkeypatch):
     monkeypatch.setenv("CATALOG_MODE", "http-demo")
+    monkeypatch.setenv("EDC_DEMO_PARTICIPANTS", json.dumps({A: TOKEN_A, B: TOKEN_B}))
     monkeypatch.setenv("CATALOG_STARTUP_CHECKS", "false")
     monkeypatch.delenv("CATALOG_PUBLIC_URL", raising=False)
     dataset = Dataset()
@@ -229,3 +231,100 @@ def test_query_backend_failures_are_controlled(system, monkeypatch, kind, expect
     monkeypatch.setattr(FusekiClient, "query_results", fail)
     assert client.post("/sparql", json={"query": "ASK {}"}).status_code == expected
     assert client.post("/sparql", json={"query": "ASK {}"}).status_code == expected
+
+
+def test_one_catalog_per_publisher_and_search_across_sources(system):
+    client, index, _ = system
+    assert publish(client, TOKEN_A, "participant-a/catalog-v1.ttl").status_code == 200
+    assert publish(client, TOKEN_B, "participant-b/catalog-v1.ttl").status_code == 200
+    catalogs = client.get("/catalogs").json()
+    assert len(catalogs) == 2
+    assert {row["provider"] for row in catalogs} == {A, B}
+    assert sum(row["dataset_count"] for row in catalogs) == 3
+    assert {
+        row["provider"] for row in client.get("/datasets", params={"q": "live-demo"}).json()
+    } == {A, B}
+    rows = client.get("/datasets", params={"q": "FRAME"}).json()
+    assert len(rows) == 1 and rows[0]["provider"] == A
+    assert rows[0]["metadata"]["catalog_id"].endswith("a-catalog")
+    assert client.get("/datasets", params={"q": '" } UNION { ?s ?p ?o } #'}).json() == []
+
+    before = set(index.graph(URIRef(graph_uri_for_participant(A))))
+    multiple = (
+        DATA / "participant-a/catalog-v1.ttl"
+    ).read_text() + "\n<urn:second> a dcat:Catalog ; dcat:contactPoint <urn:contact> ."
+    response = client.post(
+        "/catalog",
+        content=multiple,
+        headers={"Authorization": f"Bearer {TOKEN_A}", "Content-Type": "text/turtle"},
+    )
+    assert response.status_code == 422
+    assert "exactly one" in str(response.json())
+    assert set(index.graph(URIRef(graph_uri_for_participant(A)))) == before
+
+
+def test_shared_resource_ids_keep_publisher_details_separate(system):
+    client, _, _ = system
+    from tests.fixtures import VALID_TURTLE
+
+    for token, title in [(TOKEN_A, "Publisher A only"), (TOKEN_B, "Publisher B only")]:
+        response = client.post(
+            "/catalog",
+            content=VALID_TURTLE.replace("Test dataset", title),
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "text/turtle"},
+        )
+        assert response.status_code == 200
+    rows = client.get("/datasets").json()
+    assert len(rows) == 2
+    assert len(client.get("/catalogs").json()) == 2
+    params = {"dataset_id": rows[0]["dataset_id"]}
+    assert client.get("/datasets/detail", params=params).status_code == 409
+    for row in rows:
+        detail = client.get(
+            "/datasets/detail", params={**params, "graph": row["metadata"]["graph"]}
+        ).json()
+        assert detail["title"] == row["title"]
+        assert detail["provider"] == row["provider"]
+        other = "Publisher B only" if row["provider"] == A else "Publisher A only"
+        assert other not in str(detail)
+    assert (
+        client.get("/datasets/detail", params={**params, "graph": "urn:missing"}).status_code == 404
+    )
+
+
+def test_empty_catalog_replaces_previous_and_changed_catalog_id_does_not_append(system):
+    client, index, _ = system
+    assert publish(client, TOKEN_A, "participant-a/catalog-v1.ttl").status_code == 200
+    assert publish(client, TOKEN_B, "participant-b/catalog-v1.ttl").status_code == 200
+    before = set(index.graph(URIRef(graph_uri_for_participant(B))))
+    empty = "@prefix dcat: <http://www.w3.org/ns/dcat#> . <urn:new-catalog> a dcat:Catalog ; dcat:contactPoint <urn:contact> ."
+    assert (
+        client.post(
+            "/catalog",
+            content=empty,
+            headers={"Authorization": f"Bearer {TOKEN_A}", "Content-Type": "text/turtle"},
+        ).status_code
+        == 200
+    )
+    catalogs = client.get("/catalogs").json()
+    own = [row for row in catalogs if row["provider"] == A]
+    assert len(own) == 1 and own[0]["catalog_id"] == "urn:new-catalog"
+    assert own[0]["dataset_count"] == 0
+    assert all(row["provider"] == B for row in client.get("/datasets").json())
+    assert set(index.graph(URIRef(graph_uri_for_participant(B)))) == before
+
+
+def test_unlinked_dataset_rejected_and_keywords_searchable(system):
+    client, _, _ = system
+    from tests.fixtures import VALID_TURTLE
+
+    payload = (
+        VALID_TURTLE
+        + '\n<https://example.org/datasets/test> <http://www.w3.org/ns/dcat#keyword> "Structural inspection" .'
+    )
+    headers = {"Authorization": f"Bearer {TOKEN_A}", "Content-Type": "text/turtle"}
+    assert client.post("/catalog", content=payload, headers=headers).status_code == 200
+    assert len(client.get("/datasets", params={"q": "structural"}).json()) == 1
+    orphan = "\n<urn:orphan> a <http://www.w3.org/ns/dcat#Dataset> ."
+    assert client.post("/catalog", content=payload + orphan, headers=headers).status_code == 422
+    assert len(client.get("/datasets", params={"q": "structural"}).json()) == 1
