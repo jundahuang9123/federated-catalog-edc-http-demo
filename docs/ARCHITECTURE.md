@@ -1,91 +1,47 @@
-# Architecture and trust boundary
+# Architecture
 
-## Demonstrated path
+[Documentation index](README.md) · [Illustrated workflow](workflow.html)
 
-```text
-Participant A fixture ----\
-                           EDC HTTP adapter simulator
-Participant B fixture ----/     |
-                                | HTTPS POST /catalog
-                                | Authorization: Bearer <demo token>
-                                | Content-Type: text/turtle
-                                v
-                         Caddy reverse proxy
-                                |
-                         FastAPI catalog
-                     1. authenticate token
-                     2. derive participant URI
-                     3. parse and SHACL-validate RDF
-                     4. replace participant graph
-                                |
-                         Apache Jena Fuseki
-                      persistent TDB2 dataset
-                                |
-             UI + GET discovery + bounded POST /sparql
-```
+## The model
 
-The simulator represents only the final delivery action an adapter beside an EDC connector could perform after some external workflow has produced DCAT/RDF. This repository does not contain an Eclipse EDC runtime, DSP messaging, catalog exchange, contract negotiation, policy evaluation or enforcement, transfer orchestration, a control plane, or a data plane.
+The federated catalog is a catalog of publisher catalogs. Each authenticated publisher owns one complete snapshot in its own named graph. Its catalog and dataset identifiers remain visible in combined search and query results.
 
-## Components
+A publisher sends DCAT/RDF metadata using `POST /catalog`. The catalog checks the token, validates the content, and replaces that publisher's snapshot. The referenced data files remain with their providers. All catalog metadata is publicly readable.
 
-The simulator is a standard-library Python client. It chooses a token by participant URI from `.env`, infers the RDF media type from the file extension, creates a request ID and sends the RDF body. It does not send a participant identity header.
+## Responsibilities
 
-Caddy terminates HTTPS and proxies requests to FastAPI. It removes caller-supplied participant identity headers before forwarding, so public callers cannot use those headers to assign graph ownership. Only Caddy publishes host ports; FastAPI and Fuseki remain on Docker networks.
+| Component | What it does |
+| --- | --- |
+| Individual browser publisher | Runs locally, reads a selected DCAT file, sends it through a local Python sender with the participant token |
+| CLI simulator | Sends the same HTTP request without the browser |
+| Caddy | Provides the one public HTTPS origin and proxies to the catalog |
+| Catalog service | Authenticates, validates, stores and exposes discovery and read-only queries |
+| Fuseki | Persists one named graph per publisher in a central TDB2 dataset |
 
-The FastAPI catalog maps a bearer token to one configured participant URI. It validates the RDF, normalizes it to Turtle, and replaces exactly that participant's graph through Fuseki's Graph Store Protocol. It also serves discovery, readiness, UI assets and the restricted query endpoint.
+Only Caddy exposes public server ports. The local browser publisher needs no domain: its Python sender makes the remote request, so the catalog needs no browser CORS change. Neither client runs Eclipse EDC or DSP. [Publisher setup](../publisher/README.md) · [Server deployment](DEPLOYMENT.md).
 
-Fuseki stores one TDB2 dataset in the `fuseki-data` Docker volume. Its SPARQL query and Graph Store endpoints are available only to the catalog network. The assembler exposes no SPARQL Update endpoint.
+## Ownership and replacement
 
-## Identity and graph ownership
+`EDC_DEMO_PARTICIPANTS` maps each participant URI to its unique bearer token. The catalog derives the graph as `urn:catalog:` plus the percent-encoded participant URI. RDF publisher labels and client-selected catalog identifiers do not determine graph ownership. Caddy strips participant identity headers; the application also rejects a conflicting identity header when reached directly.
 
-`EDC_DEMO_PARTICIPANTS` is the complete participant directory for this demonstration:
+A valid snapshot contains exactly one IRI-identified `dcat:Catalog`, linking all included datasets directly or through dataset series. An empty catalog is allowed. Changing the catalog IRI still replaces the same publisher's snapshot.
 
-```json
-{
-  "urn:demo:participant:a": "<64-or-more-hex-characters>",
-  "urn:demo:participant:b": "<different-64-or-more-hex-characters>"
-}
-```
+Authentication, parsing and validation occur before storage. One Graph Store `PUT` replaces the graph with no preceding delete. Rejected input preserves the previous version. Omitted datasets disappear from that publisher's contribution; other graphs are unchanged. Concurrent accepted writes for one publisher use the last committed snapshot; there is no version-conflict protocol.
 
-The catalog compares the supplied token with the configured tokens and obtains the participant URI from the matching entry. A participant's graph is deterministic:
+[Full ingestion contract](HTTP_INGESTION_CONTRACT.md)
 
-```text
-urn:catalog:<percent-encoded-participant-URI>
-```
+## Discovery
 
-For example, `urn:demo:participant:a` becomes `urn:catalog:urn%3Ademo%3Aparticipant%3Aa`. RDF statements such as `dct:publisher` do not decide ownership, and discovery reports the participant decoded from the graph name.
+`GET /catalogs` lists source catalogs. Dataset discovery returns one result per source graph and dataset identifier, with `metadata.catalog_id` and `metadata.graph`. Details use the selected graph; an unscoped identifier shared by multiple sources returns HTTP 409 instead of mixing their descriptions.
 
-These shared bearer tokens are suitable only for the controlled demonstrator. They do not prove possession of an EDC identity, verify a DSP participant context, or express an EDC policy. A real integration should put an adapter behind the connector's authenticated workflow and give that adapter an appropriate service credential accepted by the catalog.
+Keyword search is case-insensitive substring matching across the combined dataset listings, available in the browser and via `/datasets?q=...`. It is not a ranked full-text index.
 
-## Publication semantics
+`POST /sparql` accepts JSON containing SELECT or ASK, queries the central index, and returns SPARQL JSON results. It can inspect or join multiple named graphs. It does not contact remote SPARQL endpoints or allow updates. [SPARQL limits and examples](SPARQL.md).
 
-A successful request follows this sequence:
+Shared identifiers and explicit RDF links allow related records to be discovered together. A shared asset type alone does not identify the same individual asset. The [AAS/DPP scenario](AAS_DPP_SCENARIO.md) demonstrates the distinction.
 
-1. Authenticate the bearer token and derive the participant URI.
-2. enforce the configured request-size bound;
-3. parse the declared RDF format as UTF-8;
-4. apply the catalog SHACL validation gate;
-5. serialize the validated graph to Turtle;
-6. use Graph Store `PUT` to replace the participant's named graph.
+## Scope and operations
 
-Authentication, media-type, parsing and SHACL failures occur before storage. One successful `PUT` replaces the graph; there is no preceding destructive delete. A failed validation therefore leaves the previous valid snapshot intact. Submissions from participant A never replace participant B's graph. Concurrent accepted writes for the same participant use last-committed-write semantics; this demo has no version or conflict protocol.
+This is a custom HTTP ingestion demo, not an EDC connector, an AAS server or a DPP assembler. Tokens are statically configured demo credentials. The operator generates and rotates them; changes require recreating the catalog container. Persistent metadata remains in the Fuseki volume across ordinary restarts.
 
-## Discovery and querying
-
-`GET /datasets` and `GET /datasets/detail` query the materialized Fuseki dataset. `POST /sparql` accepts JSON containing a SELECT or ASK query. It rejects SPARQL Update, `SERVICE`, `FROM` dataset clauses and extension functions, and applies request, row, response-size, concurrency and time limits.
-
-Queries can inspect several named graphs inside one Fuseki dataset. This is cross-participant querying over a materialized central index; it is not distributed SPARQL federation.
-
-## Operational boundaries
-
-The readiness endpoint checks Fuseki and the participant configuration. The participant mapping is loaded from deployment configuration, so changing participants or rotating tokens requires restarting the catalog with the new environment.
-
-The index exposes metadata through its discovery and query interfaces. It has no per-participant read authorization. Store only metadata approved for this public demonstration.
-
-The central deployment uses one catalog host. An optional, separate local browser publisher in `publisher/` sends requests through its own Python service; it is not hosted by the catalog and needs no publisher domain. See [individual setup](../publisher/README.md). It does not connect to external participant storage or identity infrastructure. Those systems can remain part of a broader project architecture, but they are outside the path established by this repository.
-
-## Catalog of catalogs
-
-Each publisher owns one complete catalog snapshot in a token-derived named graph. The validation gate requires exactly one catalog with an IRI and membership links for every dataset. An empty catalog is valid. A new snapshot replaces the old one even if its catalog IRI changes.
-
-`GET /catalogs` exposes the contributed catalogs. Dataset discovery returns one entry per source graph and dataset identifier, with `metadata.catalog_id` and `metadata.graph`. Dataset details use the selected graph to avoid mixing descriptions from different publishers; an ambiguous unscoped lookup returns HTTP 409. Keyword search is case-insensitive substring filtering across the combined listings, available in the browser and with `/datasets?q=...`; it is not a ranked full-text index. All reads are public. SPARQL joins across named graphs remain available through the existing read-only endpoint.
+See [requirements](REQUIREMENTS.md) for the intended behavior, [deployment](DEPLOYMENT.md) for operations, and [audit](AUDIT.md) for limitations and evidence boundaries.

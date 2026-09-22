@@ -51,8 +51,9 @@ See the root [deployment guide](../docs/DEPLOYMENT.md) for every setting and the
 | Method and path | Purpose |
 | --- | --- |
 | `POST /catalog` | Authenticate, validate and replace a participant snapshot |
-| `GET /datasets` | List indexed DCAT datasets |
-| `GET /datasets/detail?dataset_id=...` | Return dataset metadata and triples |
+| `GET /catalogs` | List contributed catalogs and publishers |
+| `GET /datasets?q=...` | Search datasets across source catalogs |
+| `GET /datasets/detail?dataset_id=...&graph=...` | Return dataset metadata and triples |
 | `POST /sparql` | Run a bounded SELECT or ASK query |
 | `GET /status` | Report counts and dependency state |
 | `GET /health` | Process liveness |

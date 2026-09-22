@@ -22,13 +22,13 @@ The audit standard is the claim in [REQUIREMENTS.md](REQUIREMENTS.md). The tool 
 - Discovery derives provider identity from graph ownership rather than untrusted RDF statements.
 - Fuseki has a persistent volume and no public port or SPARQL Update service.
 - Public SPARQL is restricted to bounded SELECT and ASK.
-- The push-side artifact is a command-line simulator with an explicit non-EDC disclaimer.
+- The senders are a standalone local browser publisher and a CLI simulator, both explicitly labelled as non-EDC dummies.
 
 ## Security and trust findings
 
 The configured tokens are shared demo secrets. Production configuration validation requires at least two unique values with 32 random bytes represented as hexadecimal. Tokens do not carry claims, prove an EDC participant context, or convey contract/policy evidence. Compromise of one token permits replacement of that participant's catalog graph until the credential is rotated.
 
-Graph isolation does not depend on `dct:publisher` in the submitted RDF. The public proxy removes caller-supplied participant identity headers, and the application rejects a conflicting identity header if reached directly. Fuseki credentials and participant tokens remain server-side.
+Graph isolation does not depend on `dct:publisher` in the submitted RDF. The public proxy removes caller-supplied participant identity headers, and the application rejects a conflicting identity header if reached directly. Fuseki credentials remain on the server. Each publisher holds only its own token; the full participant mapping belongs to the operator.
 
 Discovery and query are publicly readable in the supplied topology. This is suitable for approved public demo metadata and unsuitable for confidential participant data without an added read-authorization design.
 

@@ -1,0 +1,35 @@
+# Synthetic metadata only. No real submodel service or validated DPP is provided.
+@prefix cx: <https://w3id.org/construct-dcat#> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix demo: <https://example.org/aas-dpp/> .
+
+<https://example.org/aas-dpp/catalogs/environment> a dcat:Catalog ;
+  dct:title "Environment catalog"@en ;
+  dcat:contactPoint <https://example.org/aas-dpp/contacts/environment> ;
+  dcat:dataset <https://example.org/aas-dpp/datasets/environment> .
+
+<https://example.org/aas-dpp/datasets/environment> a dcat:Dataset, cx:AASDataset ;
+  dct:title "Material and environmental information"@en ;
+  dct:description "Environmental discovery metadata for the synthetic Pump 001; no certified footprint is asserted."@en ;
+  dcat:keyword "Pump 001", "materials, environment", "synthetic AAS demo" ;
+  dct:subject <https://example.org/aas-dpp/assets/pump-001> ;
+  cx:hasAASSubmodel <https://example.org/aas-dpp/submodels/environment> ;
+  dcat:distribution <https://example.org/aas-dpp/distributions/environment> .
+
+# Demo mapping: this discovery anchor is part of the agreed shell identity.
+# This does not create an AAS or verify the shell's actual submodel references.
+<https://example.org/aas-dpp/submodels/environment>
+  dct:identifier "https://example.org/aas-dpp/submodels/environment" ;
+  dct:isPartOf <https://example.org/aas-dpp/shells/pump-001> ;
+  dct:subject <https://example.org/aas-dpp/assets/pump-001> ;
+  rdfs:label "Material and environmental information submodel"@en .
+
+<https://example.org/aas-dpp/assets/pump-001> rdfs:label "Pump 001 (synthetic)"@en .
+<https://example.org/aas-dpp/shells/pump-001> rdfs:label "Pump 001 shell (synthetic)"@en .
+
+<https://example.org/aas-dpp/distributions/environment> a dcat:Distribution ;
+  dcat:accessURL <https://example.org/aas-dpp/data/environment> ;
+  dcat:mediaType "application/json" ;
+  dct:description "Placeholder access URL; no real AAS payload is hosted here."@en .

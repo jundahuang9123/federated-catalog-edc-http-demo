@@ -25,12 +25,14 @@ A = "urn:demo:participant:a"
 B = "urn:demo:participant:b"
 TOKEN_A = "a" * 64
 TOKEN_B = "b" * 64
+C = "urn:demo:participant:c"
+TOKEN_C = "c" * 64
 
 
 @pytest.fixture
 def system(monkeypatch):
     monkeypatch.setenv("CATALOG_MODE", "http-demo")
-    monkeypatch.setenv("EDC_DEMO_PARTICIPANTS", json.dumps({A: TOKEN_A, B: TOKEN_B}))
+    monkeypatch.setenv("EDC_DEMO_PARTICIPANTS", json.dumps({A: TOKEN_A, B: TOKEN_B, C: TOKEN_C}))
     monkeypatch.setenv("CATALOG_STARTUP_CHECKS", "false")
     monkeypatch.delenv("CATALOG_PUBLIC_URL", raising=False)
     dataset = Dataset()
@@ -54,7 +56,7 @@ def system(monkeypatch):
         http_client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
     store = HttpDemoStore(fuseki)
-    registry = DemoParticipantRegistry({A: TOKEN_A, B: TOKEN_B})
+    registry = DemoParticipantRegistry({A: TOKEN_A, B: TOKEN_B, C: TOKEN_C})
     mode = SimpleNamespace(
         name="http-demo",
         store=store,
@@ -328,3 +330,51 @@ def test_unlinked_dataset_rejected_and_keywords_searchable(system):
     orphan = "\n<urn:orphan> a <http://www.w3.org/ns/dcat#Dataset> ."
     assert client.post("/catalog", content=payload + orphan, headers=headers).status_code == 422
     assert len(client.get("/datasets", params={"q": "structural"}).json()) == 1
+
+
+def test_aas_submodels_across_three_sources_replace_and_asset_identity(system):
+    client, index, _ = system
+    for token, path in [
+        (TOKEN_A, "manufacturer-v1.ttl"),
+        (TOKEN_B, "environment-v1.ttl"),
+        (TOKEN_C, "operator-v1.ttl"),
+    ]:
+        response = publish(client, token, "aas-dpp/" + path)
+        assert response.status_code == 200, response.json()
+    query = (DATA / "aas-dpp/asset-submodels.rq").read_text()
+
+    def results():
+        response = client.post("/sparql", json={"query": query})
+        assert response.status_code == 200, response.json()
+        return response.json()["results"]["bindings"]
+
+    rows = results()
+    assert len(rows) == 3
+    assert len({row["graph"]["value"] for row in rows}) == 3
+    assert len({row["submodel"]["value"] for row in rows}) == 3
+    assert {row["shell"]["value"] for row in rows} == {
+        "https://example.org/aas-dpp/shells/pump-001"
+    }
+    assert len(client.get("/datasets", params={"q": "Pump 001"}).json()) == 3
+    before = {owner: set(index.graph(URIRef(graph_uri_for_participant(owner)))) for owner in (A, B)}
+    assert publish(client, TOKEN_C, "aas-dpp/operator-v2.ttl").status_code == 200
+    rows = results()
+    assert len(rows) == 3
+    assert any(row["title"]["value"] == "Maintenance history — revision 2" for row in rows)
+    for owner in (A, B):
+        assert set(index.graph(URIRef(graph_uri_for_participant(owner)))) == before[owner]
+
+    # Same keywords and type, but another asset ID: semantic discovery must exclude it.
+    other_asset = (
+        (DATA / "aas-dpp/environment-v1.ttl")
+        .read_text()
+        .replace("assets/pump-001", "assets/pump-002")
+    )
+    response = client.post(
+        "/catalog",
+        content=other_asset,
+        headers={"Authorization": f"Bearer {TOKEN_B}", "Content-Type": "text/turtle"},
+    )
+    assert response.status_code == 200
+    assert len(results()) == 2
+    assert len(client.get("/datasets", params={"q": "Pump 001"}).json()) == 3

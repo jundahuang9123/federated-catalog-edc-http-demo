@@ -55,7 +55,7 @@ Each production demo token must contain at least 32 random bytes encoded as 64 o
 | `ACME_EMAIL` | Operator contact used by Caddy certificate management |
 | `CATALOG_MODE` | Must be `http-demo` |
 | `CATALOG_PUBLIC_URL` | `https://` followed by `CATALOG_HOST` |
-| `CATALOG_CORS_ORIGINS` | Optional comma-separated HTTPS browser origins; leave empty for the CLI demo |
+| `CATALOG_CORS_ORIGINS` | Optional comma-separated HTTPS browser origins; leave empty for both bundled senders |
 | `CATALOG_MAX_INGEST_BYTES` | FastAPI request-body limit; default 2 MiB |
 | `CATALOG_STARTUP_WAIT_SECONDS` | Time allowed for Fuseki to become reachable |
 | `EDC_DEMO_PARTICIPANTS` | JSON mapping participant URI to its private demo bearer token |
@@ -93,7 +93,11 @@ curl --fail https://<CATALOG_HOST>/status
 
 The UI is served at `https://<CATALOG_HOST>/`. Do not expose ports 8000 or 3030 through a firewall or extra Compose port mapping.
 
-## Run the simulator from a workstation
+## Run an individual publisher
+
+Give each participant the catalog URL and only their own token. They run `python3 publisher/server.py` locally and enter those details in the browser. See [individual setup](../publisher/README.md). The publisher is not part of the central Compose stack.
+
+## Run the CLI from the operator workstation
 
 Create an ignored `.env.simulator` containing only the participant mapping used by the client:
 

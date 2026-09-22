@@ -15,9 +15,9 @@ The repository includes:
 - one replaceable named graph per configured participant;
 - a persistent Fuseki/TDB2 index;
 - discovery APIs and bounded read-only SPARQL;
-- a command-line EDC HTTP adapter simulator;
+- an individually runnable browser publisher and a command-line EDC HTTP adapter simulator;
 - a single-host Caddy HTTPS deployment;
-- fixtures for two participants, replacement and rejection scenarios.
+- original two-participant fixtures plus a synthetic three-publisher AAS submodel discovery scenario.
 
 The repository does not implement or claim:
 
@@ -27,7 +27,8 @@ The repository does not implement or claim:
 - contract negotiation or contract-agreement verification;
 - policy evaluation or enforcement;
 - EDC transfer processes, control planes or data planes;
-- external participant storage, external identity infrastructure or a browser publisher;
+- external participant storage or external identity infrastructure;
+- AAS payload assembly or DPP completeness validation;
 - authorization for reading indexed metadata;
 - distributed SPARQL federation.
 
@@ -53,6 +54,7 @@ The repository does not implement or claim:
 ### Validation and storage
 
 - Parse the declared RDF format as UTF-8 and apply the existing SHACL gate.
+- Require exactly one IRI-identified catalog linking every included dataset. An empty catalog is valid.
 - Do not change storage after authentication, parsing or validation failure.
 - Replace a participant snapshot with one Graph Store `PUT`, without a preceding delete.
 - Persist Fuseki data across ordinary container recreation.
@@ -60,7 +62,8 @@ The repository does not implement or claim:
 
 ### Discovery and query
 
-- List datasets from all participant graphs.
+- List source catalogs and search datasets across participant graphs.
+- Preserve source identity when several publishers use the same resource IRI.
 - Return dataset detail and the participant derived from graph ownership.
 - Report dependency and catalog counts through status/readiness endpoints.
 - Permit bounded SELECT and ASK over the materialized index.

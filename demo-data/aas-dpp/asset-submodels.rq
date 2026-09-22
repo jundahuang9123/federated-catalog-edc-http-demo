@@ -1,0 +1,18 @@
+PREFIX cx: <https://w3id.org/construct-dcat#>
+PREFIX dcat: <http://www.w3.org/ns/dcat#>
+PREFIX dct: <http://purl.org/dc/terms/>
+SELECT DISTINCT ?graph ?catalog ?dataset ?title ?submodel ?shell ?access
+WHERE {
+  VALUES ?asset { <https://example.org/aas-dpp/assets/pump-001> }
+  GRAPH ?graph {
+    ?catalog a dcat:Catalog ; dcat:dataset ?dataset .
+    ?dataset a cx:AASDataset ;
+      dct:title ?title ;
+      dct:subject ?asset ;
+      cx:hasAASSubmodel ?submodel ;
+      dcat:distribution ?distribution .
+    ?submodel dct:subject ?asset ; dct:isPartOf ?shell .
+    ?distribution dcat:accessURL ?access .
+  }
+}
+ORDER BY ?catalog ?submodel

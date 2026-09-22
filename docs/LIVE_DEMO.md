@@ -1,5 +1,9 @@
 # Live demonstration script
 
+[Visual introduction](workflow.html) · [Documentation index](README.md)
+
+This runbook covers the original two-source BIM/AAS scenario. For the three-source shared-asset story, use the [AAS/DPP fixture runbook](../demo-data/aas-dpp/README.md).
+
 ## State the scope first
 
 Use this wording at the start:
@@ -141,6 +145,6 @@ Wait for `/ready`, then refresh the UI. The accepted participant snapshots remai
 
 Exclude bearer tokens, `.env` contents, Fuseki credentials and private server information from screenshots and reports.
 
-## Optional individual browser sender
+## Individual browser alternative
 
 Run `python3 publisher/server.py` on each participant machine and open http://127.0.0.1:8787. Enter the same deployed catalog URL with a different operator-issued token for each participant. Select the A/B fixtures used above and click Publish. The HTTP contract and graph replacement behavior are identical to the CLI. This is a dummy for individual testing and demos, not a running EDC connector. See [publisher setup](../publisher/README.md).

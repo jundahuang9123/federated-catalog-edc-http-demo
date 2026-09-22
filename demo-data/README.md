@@ -1,4 +1,6 @@
-# Construction catalog fixtures
+# Original construction catalog fixtures
+
+For a different story, see [one asset, three AAS submodel publishers](aas-dpp/README.md). That scenario is separate from the counts below.
 
 These files provide deterministic DCAT/RDF snapshots for two simulated participants. The participant identity is selected by the simulator credential; it is not taken from the fixture.
 
@@ -9,7 +11,7 @@ These files provide deterministic DCAT/RDF snapshots for two simulated participa
 - `participant-b/catalog-v1.ttl` contains Component passport set.
 - `invalid/invalid-catalog.ttl` deliberately violates the catalog shape and demonstrates rejection without losing the last valid snapshot.
 
-Participant A supplies IFC/BIM metadata and participant B supplies AAS metadata. Titles deliberately omit the word “wall”. Both use `cx:describesAssetType ifc:IfcWall`, so `queries/walls.rq` joins their semantic descriptions without inference or keyword matching.
+Participant A supplies IFC/BIM metadata and participant B supplies AAS metadata. Titles deliberately omit the word “wall”. Both use `cx:describesAssetType ifc:IfcWall`, so `queries/walls.rq` finds their semantic descriptions without inference or keyword matching.
 
 On a fresh index, A v1 plus B v1 produces three datasets and two wall-query results. Replacing A v1 with A v2 keeps three datasets and produces three wall-query results. B remains unchanged.
 
