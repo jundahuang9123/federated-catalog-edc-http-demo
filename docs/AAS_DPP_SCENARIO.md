@@ -6,7 +6,7 @@
 
 Several independent publishers contribute submodel descriptions for the same asset. The federated catalog discovers them together and returns their source catalogs and distribution links. It does not assemble an AAS, download the submodels, reconcile conflicting claims, or certify a complete DPP.
 
-The initial synthetic asset is a building pump. Its choice can change once the group's earlier demonstration data is available.
+The initial synthetic asset is a building pump. The supplied group API has now been inspected: see the [linked source catalog](../demo-data/group-aas/README.md). Its captured records describe eight distinct assets plus five unlinked templates, so they do not establish the synthetic three-submodels-for-one-asset scenario.
 
 | Source | Aspect of the shared asset | Responsibility |
 | --- | --- | --- |
@@ -44,4 +44,4 @@ The query in this repository reads the stated links; it does not prove those lin
 5. Replace the corresponding synthetic contribution only after checking the mapping. Label remaining sources as synthetic. If they describe the same asset, make their synthetic association to the real asset explicit.
 6. Add further dummy publishers incrementally, each with its own token and catalog. Demonstrate discovery, independent updates and a negative case where another asset's submodel is excluded.
 
-The group's original export has not yet been inspected. This document is a mapping plan; the synthetic fixtures are executable examples, not a conversion of that export. No changes have been made to the separate ConstructDCAT vocabulary repository.
+The supplied BaSyx API has been mapped into a separate catalog, preserving its actual asset and submodel references. The original AASX/JSON export beyond that API has not been inspected. The API's DPP-EU template has no observed shell association; linking it to an asset requires a verified relationship. No changes have been made to the separate ConstructDCAT vocabulary repository.

@@ -50,9 +50,10 @@ Open the catalog domain and confirm `/ready` returns HTTP 200. The operator prov
 | Scenario | What it shows | Starting point |
 | --- | --- | --- |
 | BIM + AAS | Different data representations discovered through a common asset **type** | [Original two-publisher fixtures](demo-data/README.md) |
+| Group AAS API | Discovery metadata linked to the actual API records, including a DPP template | [Linked source catalog](demo-data/group-aas/README.md) |
 | AAS/DPP discovery | Three publishers' submodels describing the same individual **asset** | [Synthetic pump scenario](demo-data/aas-dpp/README.md) |
 
-The new AAS/DPP scenario contains synthetic catalog metadata and placeholder distribution URLs. The group's earlier AAS/DPP export has not yet been mapped. [Mapping plan and next steps](docs/AAS_DPP_SCENARIO.md).
+The new AAS/DPP scenario contains synthetic catalog metadata and placeholder distribution URLs. The supplied group API is now mapped separately: eight asset-linked tracking instances and five unlinked templates in the captured snapshot. [Mapping plan and next steps](docs/AAS_DPP_SCENARIO.md).
 
 ## Interfaces
 

@@ -24,6 +24,7 @@ const el = {
   catalogRows: document.querySelector("#catalogRows"),
   catalogEmpty: document.querySelector("#catalogEmpty"),
   detailCatalog: document.querySelector("#detailCatalog"),
+  sourceLinks: document.querySelector("#sourceLinks"),
   rdfGraph: document.querySelector("#rdfGraph"),
 };
 
@@ -135,7 +136,29 @@ async function selectDataset(datasetId, graph) {
   el.detailCatalog.textContent = detail.metadata?.catalog_id || "-";
   el.detailProvider.textContent = detail.provider || "-";
   el.detailTypes.textContent = (detail.types || []).map(shortIri).join(", ") || detail.type || "-";
+  renderSourceLinks(detail.triples || []);
   renderGraph(detail.triples || []);
+}
+
+function renderSourceLinks(triples) {
+  el.sourceLinks.replaceChildren();
+  const predicates = new Set(['http://www.w3.org/ns/dcat#accessURL', 'http://www.w3.org/ns/dcat#downloadURL']);
+  const urls = new Set(triples.filter(t => predicates.has(t.predicate)).map(t => t.object));
+  for (const raw of urls) {
+    try {
+      const url = new URL(raw);
+      if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) continue;
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.href = url.href; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      a.textContent = `Open source data · ${url.host}`;
+      li.appendChild(a); el.sourceLinks.appendChild(li);
+    } catch { /* Invalid or non-web RDF identifiers are not navigation links. */ }
+  }
+  if (!el.sourceLinks.children.length) {
+    const li = document.createElement('li'); li.textContent = 'No web access link supplied.';
+    el.sourceLinks.appendChild(li);
+  }
 }
 
 function renderGraph(triples) {

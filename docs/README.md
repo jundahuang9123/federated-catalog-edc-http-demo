@@ -13,6 +13,7 @@
 - [Deploy the central catalog](DEPLOYMENT.md) — server information, secrets, HTTPS, persistence and updates.
 - [Local catalog development](../catalog/README.md) — local stack and development commands.
 - [Original fixtures](../demo-data/README.md) — two publishers, replacement and invalid submissions.
+- [Group API linked catalog](../demo-data/group-aas/README.md) — actual API metadata, verified access links and regeneration instructions.
 - [Shared-asset fixtures](../demo-data/aas-dpp/README.md) — three synthetic submodel contributions and a query.
 
 ## Integrate and verify

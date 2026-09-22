@@ -1,0 +1,13 @@
+{
+  "source_api": "http://132.195.160.222:8081",
+  "captured_at": "2026-09-22T22:33:05.644032+00:00",
+  "shells": 8,
+  "submodels": 13,
+  "shell_linked_submodels": 8,
+  "unlinked_submodels": 5,
+  "templates": 5,
+  "instances": 8,
+  "catalog_contact": "urn:tmdt:aas-demo:contact-pending",
+  "verified_access_links": 21,
+  "verification": "HTTP GET with matching id"
+}

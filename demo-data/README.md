@@ -2,6 +2,8 @@
 
 For a different story, see [one asset, three AAS submodel publishers](aas-dpp/README.md). That scenario is separate from the counts below.
 
+For source-linked metadata, see the [group AAS API catalog](group-aas/README.md).
+
 These files provide deterministic DCAT/RDF snapshots for two simulated participants. The participant identity is selected by the simulator credential; it is not taken from the fixture.
 
 ## Snapshots

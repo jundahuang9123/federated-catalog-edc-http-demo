@@ -30,6 +30,8 @@ jobs:
       - name: Run EDC HTTP simulator tests
         run: python -m unittest -v scripts.test_edc_http_simulator
 
+      - name: Verify AAS metadata exporter
+        run: python -m unittest -v scripts.test_aas_to_dcat
       - name: Run individual publisher tests
         run: python -m unittest discover -s publisher -p 'test_*.py' -v
 

@@ -1,0 +1,350 @@
+@prefix cx: <https://w3id.org/construct-dcat#> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:tmdt:aas-demo:catalog> a dcat:Catalog ;
+    dct:description "Discovery metadata extracted from the source API. Underlying AAS values remain at the source. Template labels and semantic identifiers are source assertions, not verified conformity claims."@en ;
+    dct:modified "2026-09-22T22:33:05.644032+00:00"^^xsd:dateTime ;
+    dct:source <http://132.195.160.222:8081/swagger-ui/index.html> ;
+    dct:title "Group AAS API — submodel discovery"@en ;
+    dcat:contactPoint <urn:tmdt:aas-demo:contact-pending> ;
+    dcat:dataset <urn:catalog-record:aas-submodel:188b95485f28af3da9ddf8c0de09af38460075b45510ed3a387995f0f931ab3f>,
+        <urn:catalog-record:aas-submodel:44f944c62c42b115793a5c7d979060a21408c8edc0e6f2980af23ec78d5424c2>,
+        <urn:catalog-record:aas-submodel:4b9e75fb4679f5f17761a8b08b94650e6d7203965fda09384db3b8cfafa923b2>,
+        <urn:catalog-record:aas-submodel:758d33df775cb3f84866f4985478450a25c2d4474335583e53271bf59f53a4f7>,
+        <urn:catalog-record:aas-submodel:8bb99a719f23e8b0f8fdb37eb60b745749a2d2e456dd5d3cd7c40e46b1d04672>,
+        <urn:catalog-record:aas-submodel:8d5d4ca3aa75f36356cca9ecb1382740824ec718ef1e8eddc09a01bf94735518>,
+        <urn:catalog-record:aas-submodel:b54f39e44f5a7c1dfa6ab299ed1ff236f8a02e8ce6c11775491b8929a9e73921>,
+        <urn:catalog-record:aas-submodel:c1e4e10ff65e31055ccdd081212188e47cd0c38a8334dd1c728120bdf16b9128>,
+        <urn:catalog-record:aas-submodel:d188d0bb6a5aaeebbb5f3c94087ce129470c1654d154bc7b8b99046e58a4fabc>,
+        <urn:catalog-record:aas-submodel:dc3343b8c94a1d8b5e8f0a9869f31929b3118ed88d0a77dadbb3e2b68764fdc0>,
+        <urn:catalog-record:aas-submodel:e8a373c648a318da93523268aefc8c1bc15b3d13904db4c3c97a38ce2b248cff>,
+        <urn:catalog-record:aas-submodel:f5b25d5cc0d641a81f3011558bc963bd969d6c9654c73ed8001a1d791ea3bd87>,
+        <urn:catalog-record:aas-submodel:fee8bb4b62990dde32f5208e5989e5ee579cf7bb53fb366054f26e8ea6dbd983> .
+
+<https://example.com/ids/AssetAdministrationShell_040471110035127242> dct:identifier "https://example.com/ids/AssetAdministrationShell_040471110035127242" ;
+    dct:subject <https://id.gs1.org/00/040471110035127242> ;
+    rdfs:seeAlso <http://132.195.160.222:8081/shells/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvQXNzZXRBZG1pbmlzdHJhdGlvblNoZWxsXzA0MDQ3MTExMDAzNTEyNzI0Mg> .
+
+<https://example.com/ids/AssetAdministrationShell_040471110239002239> dct:identifier "https://example.com/ids/AssetAdministrationShell_040471110239002239" ;
+    dct:subject <https://id.gs1.org/00/040471110239002239> ;
+    rdfs:seeAlso <http://132.195.160.222:8081/shells/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvQXNzZXRBZG1pbmlzdHJhdGlvblNoZWxsXzA0MDQ3MTExMDIzOTAwMjIzOQ> .
+
+<https://example.com/ids/AssetAdministrationShell_040471110242006132> dct:identifier "https://example.com/ids/AssetAdministrationShell_040471110242006132" ;
+    dct:subject <https://id.gs1.org/00/040471110242006132> ;
+    rdfs:seeAlso <http://132.195.160.222:8081/shells/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvQXNzZXRBZG1pbmlzdHJhdGlvblNoZWxsXzA0MDQ3MTExMDI0MjAwNjEzMg> .
+
+<https://example.com/ids/AssetAdministrationShell_040471110429158807> dct:identifier "https://example.com/ids/AssetAdministrationShell_040471110429158807" ;
+    dct:subject <https://id.gs1.org/00/040471110429158807> ;
+    rdfs:seeAlso <http://132.195.160.222:8081/shells/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvQXNzZXRBZG1pbmlzdHJhdGlvblNoZWxsXzA0MDQ3MTExMDQyOTE1ODgwNw> .
+
+<https://example.com/ids/AssetAdministrationShell_040471110673584704> dct:identifier "https://example.com/ids/AssetAdministrationShell_040471110673584704" ;
+    dct:subject <https://id.gs1.org/00/040471110673584704> ;
+    rdfs:seeAlso <http://132.195.160.222:8081/shells/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvQXNzZXRBZG1pbmlzdHJhdGlvblNoZWxsXzA0MDQ3MTExMDY3MzU4NDcwNA> .
+
+<https://example.com/ids/AssetAdministrationShell_040471110836956034> dct:identifier "https://example.com/ids/AssetAdministrationShell_040471110836956034" ;
+    dct:subject <https://id.gs1.org/00/040471110836956034> ;
+    rdfs:seeAlso <http://132.195.160.222:8081/shells/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvQXNzZXRBZG1pbmlzdHJhdGlvblNoZWxsXzA0MDQ3MTExMDgzNjk1NjAzNA> .
+
+<https://example.com/ids/AssetAdministrationShell_040471110844598110> dct:identifier "https://example.com/ids/AssetAdministrationShell_040471110844598110" ;
+    dct:subject <https://id.gs1.org/00/040471110844598110> ;
+    rdfs:seeAlso <http://132.195.160.222:8081/shells/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvQXNzZXRBZG1pbmlzdHJhdGlvblNoZWxsXzA0MDQ3MTExMDg0NDU5ODExMA> .
+
+<https://example.com/ids/AssetAdministrationShell_040471110846759755> dct:identifier "https://example.com/ids/AssetAdministrationShell_040471110846759755" ;
+    dct:subject <https://id.gs1.org/00/040471110846759755> ;
+    rdfs:seeAlso <http://132.195.160.222:8081/shells/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvQXNzZXRBZG1pbmlzdHJhdGlvblNoZWxsXzA0MDQ3MTExMDg0Njc1OTc1NQ> .
+
+<https://example.com/ids/SubmodelInstance_040471110035127242/TrackingAndTracing/1/0> rdfs:label "TrackingAndTracing" ;
+    dct:identifier "https://example.com/ids/SubmodelInstance_040471110035127242/TrackingAndTracing/1/0" ;
+    dct:isPartOf <https://example.com/ids/AssetAdministrationShell_040471110035127242> ;
+    dct:subject <https://id.gs1.org/00/040471110035127242> ;
+    rdfs:seeAlso <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvU3VibW9kZWxJbnN0YW5jZV8wNDA0NzExMTAwMzUxMjcyNDIvVHJhY2tpbmdBbmRUcmFjaW5nLzEvMA> .
+
+<https://example.com/ids/SubmodelInstance_040471110239002239/TrackingAndTracing/1/0> rdfs:label "TrackingAndTracing" ;
+    dct:identifier "https://example.com/ids/SubmodelInstance_040471110239002239/TrackingAndTracing/1/0" ;
+    dct:isPartOf <https://example.com/ids/AssetAdministrationShell_040471110239002239> ;
+    dct:subject <https://id.gs1.org/00/040471110239002239> ;
+    rdfs:seeAlso <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvU3VibW9kZWxJbnN0YW5jZV8wNDA0NzExMTAyMzkwMDIyMzkvVHJhY2tpbmdBbmRUcmFjaW5nLzEvMA> .
+
+<https://example.com/ids/SubmodelInstance_040471110242006132/TrackingAndTracing/1/0> rdfs:label "TrackingAndTracing" ;
+    dct:identifier "https://example.com/ids/SubmodelInstance_040471110242006132/TrackingAndTracing/1/0" ;
+    dct:isPartOf <https://example.com/ids/AssetAdministrationShell_040471110242006132> ;
+    dct:subject <https://id.gs1.org/00/040471110242006132> ;
+    rdfs:seeAlso <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvU3VibW9kZWxJbnN0YW5jZV8wNDA0NzExMTAyNDIwMDYxMzIvVHJhY2tpbmdBbmRUcmFjaW5nLzEvMA> .
+
+<https://example.com/ids/SubmodelInstance_040471110429158807/TrackingAndTracing/1/0> rdfs:label "TrackingAndTracing" ;
+    dct:identifier "https://example.com/ids/SubmodelInstance_040471110429158807/TrackingAndTracing/1/0" ;
+    dct:isPartOf <https://example.com/ids/AssetAdministrationShell_040471110429158807> ;
+    dct:subject <https://id.gs1.org/00/040471110429158807> ;
+    rdfs:seeAlso <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvU3VibW9kZWxJbnN0YW5jZV8wNDA0NzExMTA0MjkxNTg4MDcvVHJhY2tpbmdBbmRUcmFjaW5nLzEvMA> .
+
+<https://example.com/ids/SubmodelInstance_040471110673584704/TrackingAndTracing/1/0> rdfs:label "TrackingAndTracing" ;
+    dct:identifier "https://example.com/ids/SubmodelInstance_040471110673584704/TrackingAndTracing/1/0" ;
+    dct:isPartOf <https://example.com/ids/AssetAdministrationShell_040471110673584704> ;
+    dct:subject <https://id.gs1.org/00/040471110673584704> ;
+    rdfs:seeAlso <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvU3VibW9kZWxJbnN0YW5jZV8wNDA0NzExMTA2NzM1ODQ3MDQvVHJhY2tpbmdBbmRUcmFjaW5nLzEvMA> .
+
+<https://example.com/ids/SubmodelInstance_040471110836956034/TrackingAndTracing/1/0> rdfs:label "TrackingAndTracing" ;
+    dct:identifier "https://example.com/ids/SubmodelInstance_040471110836956034/TrackingAndTracing/1/0" ;
+    dct:isPartOf <https://example.com/ids/AssetAdministrationShell_040471110836956034> ;
+    dct:subject <https://id.gs1.org/00/040471110836956034> ;
+    rdfs:seeAlso <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvU3VibW9kZWxJbnN0YW5jZV8wNDA0NzExMTA4MzY5NTYwMzQvVHJhY2tpbmdBbmRUcmFjaW5nLzEvMA> .
+
+<https://example.com/ids/SubmodelInstance_040471110844598110/TrackingAndTracing/1/0> rdfs:label "TrackingAndTracing" ;
+    dct:identifier "https://example.com/ids/SubmodelInstance_040471110844598110/TrackingAndTracing/1/0" ;
+    dct:isPartOf <https://example.com/ids/AssetAdministrationShell_040471110844598110> ;
+    dct:subject <https://id.gs1.org/00/040471110844598110> ;
+    rdfs:seeAlso <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvU3VibW9kZWxJbnN0YW5jZV8wNDA0NzExMTA4NDQ1OTgxMTAvVHJhY2tpbmdBbmRUcmFjaW5nLzEvMA> .
+
+<https://example.com/ids/SubmodelInstance_040471110846759755/TrackingAndTracing/1/0> rdfs:label "TrackingAndTracing" ;
+    dct:identifier "https://example.com/ids/SubmodelInstance_040471110846759755/TrackingAndTracing/1/0" ;
+    dct:isPartOf <https://example.com/ids/AssetAdministrationShell_040471110846759755> ;
+    dct:subject <https://id.gs1.org/00/040471110846759755> ;
+    rdfs:seeAlso <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvU3VibW9kZWxJbnN0YW5jZV8wNDA0NzExMTA4NDY3NTk3NTUvVHJhY2tpbmdBbmRUcmFjaW5nLzEvMA> .
+
+<https://example.com/ids/SubmodelTemplate/TrackingAndTracing/1/0> rdfs:label "TrackingAndTracing" ;
+    dct:identifier "https://example.com/ids/SubmodelTemplate/TrackingAndTracing/1/0" ;
+    rdfs:seeAlso <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvU3VibW9kZWxUZW1wbGF0ZS9UcmFja2luZ0FuZFRyYWNpbmcvMS8w> .
+
+<https://example.com/ids/sm/5210_9042_6062_1633> rdfs:label "HerstellerInformationen" ;
+    dct:identifier "https://example.com/ids/sm/5210_9042_6062_1633" ;
+    rdfs:seeAlso <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvc20vNTIxMF85MDQyXzYwNjJfMTYzMw> .
+
+<https://example.com/ids/sm/8420_9042_6062_9069> rdfs:label "Logistik" ;
+    dct:identifier "https://example.com/ids/sm/8420_9042_6062_9069" ;
+    rdfs:seeAlso <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvc20vODQyMF85MDQyXzYwNjJfOTA2OQ> .
+
+<https://example.com/ids/sm/DPP_EU> rdfs:label "DPP-EU" ;
+    dct:identifier "https://example.com/ids/sm/DPP_EU" ;
+    dct:type <https://admin-shell.io/submodels/DigitalProductPassport/1/0> ;
+    rdfs:seeAlso <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvc20vRFBQX0VV> .
+
+<https://example.com/ids/sm/SustainabilityData> rdfs:label "SustainabilityData" ;
+    dct:identifier "https://example.com/ids/sm/SustainabilityData" ;
+    rdfs:seeAlso <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvc20vU3VzdGFpbmFiaWxpdHlEYXRh> .
+
+<urn:catalog-record:aas-submodel:188b95485f28af3da9ddf8c0de09af38460075b45510ed3a387995f0f931ab3f> a dcat:Dataset,
+        cx:AASDataset ;
+    dct:identifier "https://example.com/ids/SubmodelInstance_040471110673584704/TrackingAndTracing/1/0" ;
+    dct:subject <https://id.gs1.org/00/040471110673584704> ;
+    dct:title "TrackingAndTracing — Instance — 040471110673584704" ;
+    dcat:distribution <urn:catalog-record:aas-submodel:188b95485f28af3da9ddf8c0de09af38460075b45510ed3a387995f0f931ab3f:distribution> ;
+    dcat:keyword "AAS",
+        "Instance",
+        "TrackingAndTracing",
+        "https://id.gs1.org/00/040471110673584704" ;
+    cx:hasAASSubmodel <https://example.com/ids/SubmodelInstance_040471110673584704/TrackingAndTracing/1/0> .
+
+<urn:catalog-record:aas-submodel:188b95485f28af3da9ddf8c0de09af38460075b45510ed3a387995f0f931ab3f:distribution> a dcat:Distribution ;
+    dcat:accessURL <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvU3VibW9kZWxJbnN0YW5jZV8wNDA0NzExMTA2NzM1ODQ3MDQvVHJhY2tpbmdBbmRUcmFjaW5nLzEvMA> ;
+    dcat:mediaType "application/json" .
+
+<urn:catalog-record:aas-submodel:44f944c62c42b115793a5c7d979060a21408c8edc0e6f2980af23ec78d5424c2> a dcat:Dataset,
+        cx:AASDataset ;
+    dct:description "No shell reference was found in the inspected API. No asset or shell association is inferred."@en ;
+    dct:identifier "https://example.com/ids/SubmodelTemplate/TrackingAndTracing/1/0" ;
+    dct:title "TrackingAndTracing — Template" ;
+    dcat:distribution <urn:catalog-record:aas-submodel:44f944c62c42b115793a5c7d979060a21408c8edc0e6f2980af23ec78d5424c2:distribution> ;
+    dcat:keyword "AAS",
+        "Template",
+        "TrackingAndTracing" ;
+    cx:hasAASSubmodel <https://example.com/ids/SubmodelTemplate/TrackingAndTracing/1/0> .
+
+<urn:catalog-record:aas-submodel:44f944c62c42b115793a5c7d979060a21408c8edc0e6f2980af23ec78d5424c2:distribution> a dcat:Distribution ;
+    dcat:accessURL <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvU3VibW9kZWxUZW1wbGF0ZS9UcmFja2luZ0FuZFRyYWNpbmcvMS8w> ;
+    dcat:mediaType "application/json" .
+
+<urn:catalog-record:aas-submodel:4b9e75fb4679f5f17761a8b08b94650e6d7203965fda09384db3b8cfafa923b2> a dcat:Dataset,
+        cx:AASDataset ;
+    dct:identifier "https://example.com/ids/SubmodelInstance_040471110242006132/TrackingAndTracing/1/0" ;
+    dct:subject <https://id.gs1.org/00/040471110242006132> ;
+    dct:title "TrackingAndTracing — Instance — 040471110242006132" ;
+    dcat:distribution <urn:catalog-record:aas-submodel:4b9e75fb4679f5f17761a8b08b94650e6d7203965fda09384db3b8cfafa923b2:distribution> ;
+    dcat:keyword "AAS",
+        "Instance",
+        "TrackingAndTracing",
+        "https://id.gs1.org/00/040471110242006132" ;
+    cx:hasAASSubmodel <https://example.com/ids/SubmodelInstance_040471110242006132/TrackingAndTracing/1/0> .
+
+<urn:catalog-record:aas-submodel:4b9e75fb4679f5f17761a8b08b94650e6d7203965fda09384db3b8cfafa923b2:distribution> a dcat:Distribution ;
+    dcat:accessURL <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvU3VibW9kZWxJbnN0YW5jZV8wNDA0NzExMTAyNDIwMDYxMzIvVHJhY2tpbmdBbmRUcmFjaW5nLzEvMA> ;
+    dcat:mediaType "application/json" .
+
+<urn:catalog-record:aas-submodel:758d33df775cb3f84866f4985478450a25c2d4474335583e53271bf59f53a4f7> a dcat:Dataset,
+        cx:AASDataset ;
+    dct:identifier "https://example.com/ids/SubmodelInstance_040471110836956034/TrackingAndTracing/1/0" ;
+    dct:subject <https://id.gs1.org/00/040471110836956034> ;
+    dct:title "TrackingAndTracing — Instance — 040471110836956034" ;
+    dcat:distribution <urn:catalog-record:aas-submodel:758d33df775cb3f84866f4985478450a25c2d4474335583e53271bf59f53a4f7:distribution> ;
+    dcat:keyword "AAS",
+        "Instance",
+        "TrackingAndTracing",
+        "https://id.gs1.org/00/040471110836956034" ;
+    cx:hasAASSubmodel <https://example.com/ids/SubmodelInstance_040471110836956034/TrackingAndTracing/1/0> .
+
+<urn:catalog-record:aas-submodel:758d33df775cb3f84866f4985478450a25c2d4474335583e53271bf59f53a4f7:distribution> a dcat:Distribution ;
+    dcat:accessURL <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvU3VibW9kZWxJbnN0YW5jZV8wNDA0NzExMTA4MzY5NTYwMzQvVHJhY2tpbmdBbmRUcmFjaW5nLzEvMA> ;
+    dcat:mediaType "application/json" .
+
+<urn:catalog-record:aas-submodel:8bb99a719f23e8b0f8fdb37eb60b745749a2d2e456dd5d3cd7c40e46b1d04672> a dcat:Dataset,
+        cx:AASDataset ;
+    dct:identifier "https://example.com/ids/SubmodelInstance_040471110844598110/TrackingAndTracing/1/0" ;
+    dct:subject <https://id.gs1.org/00/040471110844598110> ;
+    dct:title "TrackingAndTracing — Instance — 040471110844598110" ;
+    dcat:distribution <urn:catalog-record:aas-submodel:8bb99a719f23e8b0f8fdb37eb60b745749a2d2e456dd5d3cd7c40e46b1d04672:distribution> ;
+    dcat:keyword "AAS",
+        "Instance",
+        "TrackingAndTracing",
+        "https://id.gs1.org/00/040471110844598110" ;
+    cx:hasAASSubmodel <https://example.com/ids/SubmodelInstance_040471110844598110/TrackingAndTracing/1/0> .
+
+<urn:catalog-record:aas-submodel:8bb99a719f23e8b0f8fdb37eb60b745749a2d2e456dd5d3cd7c40e46b1d04672:distribution> a dcat:Distribution ;
+    dcat:accessURL <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvU3VibW9kZWxJbnN0YW5jZV8wNDA0NzExMTA4NDQ1OTgxMTAvVHJhY2tpbmdBbmRUcmFjaW5nLzEvMA> ;
+    dcat:mediaType "application/json" .
+
+<urn:catalog-record:aas-submodel:8d5d4ca3aa75f36356cca9ecb1382740824ec718ef1e8eddc09a01bf94735518> a dcat:Dataset,
+        cx:AASDataset ;
+    dct:description "No shell reference was found in the inspected API. No asset or shell association is inferred."@en ;
+    dct:identifier "https://example.com/ids/sm/5210_9042_6062_1633" ;
+    dct:title "HerstellerInformationen — Template" ;
+    dcat:distribution <urn:catalog-record:aas-submodel:8d5d4ca3aa75f36356cca9ecb1382740824ec718ef1e8eddc09a01bf94735518:distribution> ;
+    dcat:keyword "AAS",
+        "HerstellerInformationen",
+        "Template" ;
+    cx:hasAASSubmodel <https://example.com/ids/sm/5210_9042_6062_1633> .
+
+<urn:catalog-record:aas-submodel:8d5d4ca3aa75f36356cca9ecb1382740824ec718ef1e8eddc09a01bf94735518:distribution> a dcat:Distribution ;
+    dcat:accessURL <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvc20vNTIxMF85MDQyXzYwNjJfMTYzMw> ;
+    dcat:mediaType "application/json" .
+
+<urn:catalog-record:aas-submodel:b54f39e44f5a7c1dfa6ab299ed1ff236f8a02e8ce6c11775491b8929a9e73921> a dcat:Dataset,
+        cx:AASDataset ;
+    dct:identifier "https://example.com/ids/SubmodelInstance_040471110846759755/TrackingAndTracing/1/0" ;
+    dct:subject <https://id.gs1.org/00/040471110846759755> ;
+    dct:title "TrackingAndTracing — Instance — 040471110846759755" ;
+    dcat:distribution <urn:catalog-record:aas-submodel:b54f39e44f5a7c1dfa6ab299ed1ff236f8a02e8ce6c11775491b8929a9e73921:distribution> ;
+    dcat:keyword "AAS",
+        "Instance",
+        "TrackingAndTracing",
+        "https://id.gs1.org/00/040471110846759755" ;
+    cx:hasAASSubmodel <https://example.com/ids/SubmodelInstance_040471110846759755/TrackingAndTracing/1/0> .
+
+<urn:catalog-record:aas-submodel:b54f39e44f5a7c1dfa6ab299ed1ff236f8a02e8ce6c11775491b8929a9e73921:distribution> a dcat:Distribution ;
+    dcat:accessURL <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvU3VibW9kZWxJbnN0YW5jZV8wNDA0NzExMTA4NDY3NTk3NTUvVHJhY2tpbmdBbmRUcmFjaW5nLzEvMA> ;
+    dcat:mediaType "application/json" .
+
+<urn:catalog-record:aas-submodel:c1e4e10ff65e31055ccdd081212188e47cd0c38a8334dd1c728120bdf16b9128> a dcat:Dataset,
+        cx:AASDataset ;
+    dct:identifier "https://example.com/ids/SubmodelInstance_040471110035127242/TrackingAndTracing/1/0" ;
+    dct:subject <https://id.gs1.org/00/040471110035127242> ;
+    dct:title "TrackingAndTracing — Instance — 040471110035127242" ;
+    dcat:distribution <urn:catalog-record:aas-submodel:c1e4e10ff65e31055ccdd081212188e47cd0c38a8334dd1c728120bdf16b9128:distribution> ;
+    dcat:keyword "AAS",
+        "Instance",
+        "TrackingAndTracing",
+        "https://id.gs1.org/00/040471110035127242" ;
+    cx:hasAASSubmodel <https://example.com/ids/SubmodelInstance_040471110035127242/TrackingAndTracing/1/0> .
+
+<urn:catalog-record:aas-submodel:c1e4e10ff65e31055ccdd081212188e47cd0c38a8334dd1c728120bdf16b9128:distribution> a dcat:Distribution ;
+    dcat:accessURL <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvU3VibW9kZWxJbnN0YW5jZV8wNDA0NzExMTAwMzUxMjcyNDIvVHJhY2tpbmdBbmRUcmFjaW5nLzEvMA> ;
+    dcat:mediaType "application/json" .
+
+<urn:catalog-record:aas-submodel:d188d0bb6a5aaeebbb5f3c94087ce129470c1654d154bc7b8b99046e58a4fabc> a dcat:Dataset,
+        cx:AASDataset ;
+    dct:identifier "https://example.com/ids/SubmodelInstance_040471110239002239/TrackingAndTracing/1/0" ;
+    dct:subject <https://id.gs1.org/00/040471110239002239> ;
+    dct:title "TrackingAndTracing — Instance — 040471110239002239" ;
+    dcat:distribution <urn:catalog-record:aas-submodel:d188d0bb6a5aaeebbb5f3c94087ce129470c1654d154bc7b8b99046e58a4fabc:distribution> ;
+    dcat:keyword "AAS",
+        "Instance",
+        "TrackingAndTracing",
+        "https://id.gs1.org/00/040471110239002239" ;
+    cx:hasAASSubmodel <https://example.com/ids/SubmodelInstance_040471110239002239/TrackingAndTracing/1/0> .
+
+<urn:catalog-record:aas-submodel:d188d0bb6a5aaeebbb5f3c94087ce129470c1654d154bc7b8b99046e58a4fabc:distribution> a dcat:Distribution ;
+    dcat:accessURL <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvU3VibW9kZWxJbnN0YW5jZV8wNDA0NzExMTAyMzkwMDIyMzkvVHJhY2tpbmdBbmRUcmFjaW5nLzEvMA> ;
+    dcat:mediaType "application/json" .
+
+<urn:catalog-record:aas-submodel:dc3343b8c94a1d8b5e8f0a9869f31929b3118ed88d0a77dadbb3e2b68764fdc0> a dcat:Dataset,
+        cx:AASDataset ;
+    dct:alternative "Nachhaltigkeitsdaten"@de ;
+    dct:description "No shell reference was found in the inspected API. No asset or shell association is inferred."@en ;
+    dct:identifier "https://example.com/ids/sm/SustainabilityData" ;
+    dct:title "SustainabilityData — Template" ;
+    dcat:distribution <urn:catalog-record:aas-submodel:dc3343b8c94a1d8b5e8f0a9869f31929b3118ed88d0a77dadbb3e2b68764fdc0:distribution> ;
+    dcat:keyword "AAS",
+        "SustainabilityData",
+        "Template" ;
+    cx:hasAASSubmodel <https://example.com/ids/sm/SustainabilityData> .
+
+<urn:catalog-record:aas-submodel:dc3343b8c94a1d8b5e8f0a9869f31929b3118ed88d0a77dadbb3e2b68764fdc0:distribution> a dcat:Distribution ;
+    dcat:accessURL <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvc20vU3VzdGFpbmFiaWxpdHlEYXRh> ;
+    dcat:mediaType "application/json" .
+
+<urn:catalog-record:aas-submodel:e8a373c648a318da93523268aefc8c1bc15b3d13904db4c3c97a38ce2b248cff> a dcat:Dataset,
+        cx:AASDataset ;
+    dct:identifier "https://example.com/ids/SubmodelInstance_040471110429158807/TrackingAndTracing/1/0" ;
+    dct:subject <https://id.gs1.org/00/040471110429158807> ;
+    dct:title "TrackingAndTracing — Instance — 040471110429158807" ;
+    dcat:distribution <urn:catalog-record:aas-submodel:e8a373c648a318da93523268aefc8c1bc15b3d13904db4c3c97a38ce2b248cff:distribution> ;
+    dcat:keyword "AAS",
+        "Instance",
+        "TrackingAndTracing",
+        "https://id.gs1.org/00/040471110429158807" ;
+    cx:hasAASSubmodel <https://example.com/ids/SubmodelInstance_040471110429158807/TrackingAndTracing/1/0> .
+
+<urn:catalog-record:aas-submodel:e8a373c648a318da93523268aefc8c1bc15b3d13904db4c3c97a38ce2b248cff:distribution> a dcat:Distribution ;
+    dcat:accessURL <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvU3VibW9kZWxJbnN0YW5jZV8wNDA0NzExMTA0MjkxNTg4MDcvVHJhY2tpbmdBbmRUcmFjaW5nLzEvMA> ;
+    dcat:mediaType "application/json" .
+
+<urn:catalog-record:aas-submodel:f5b25d5cc0d641a81f3011558bc963bd969d6c9654c73ed8001a1d791ea3bd87> a dcat:Dataset,
+        cx:AASDataset ;
+    dct:description "Digital Product Passport data model for ESPR containing standardized data packages and transactions to exchange product, material, lifecycle, and compliance information between economic operators and authorities."@en,
+        "No shell reference was found in the inspected API. No asset or shell association is inferred."@en ;
+    dct:identifier "https://example.com/ids/sm/DPP_EU" ;
+    dct:title "DPP-EU — Template" ;
+    dct:type <https://admin-shell.io/submodels/DigitalProductPassport/1/0> ;
+    dcat:distribution <urn:catalog-record:aas-submodel:f5b25d5cc0d641a81f3011558bc963bd969d6c9654c73ed8001a1d791ea3bd87:distribution> ;
+    dcat:keyword "AAS",
+        "DPP-EU",
+        "Template",
+        "https://admin-shell.io/submodels/DigitalProductPassport/1/0" ;
+    cx:hasAASSubmodel <https://example.com/ids/sm/DPP_EU> .
+
+<urn:catalog-record:aas-submodel:f5b25d5cc0d641a81f3011558bc963bd969d6c9654c73ed8001a1d791ea3bd87:distribution> a dcat:Distribution ;
+    dcat:accessURL <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvc20vRFBQX0VV> ;
+    dcat:mediaType "application/json" .
+
+<urn:catalog-record:aas-submodel:fee8bb4b62990dde32f5208e5989e5ee579cf7bb53fb366054f26e8ea6dbd983> a dcat:Dataset,
+        cx:AASDataset ;
+    dct:description "No shell reference was found in the inspected API. No asset or shell association is inferred."@en ;
+    dct:identifier "https://example.com/ids/sm/8420_9042_6062_9069" ;
+    dct:title "Logistik — Template" ;
+    dcat:distribution <urn:catalog-record:aas-submodel:fee8bb4b62990dde32f5208e5989e5ee579cf7bb53fb366054f26e8ea6dbd983:distribution> ;
+    dcat:keyword "AAS",
+        "Logistik",
+        "Template" ;
+    cx:hasAASSubmodel <https://example.com/ids/sm/8420_9042_6062_9069> .
+
+<urn:catalog-record:aas-submodel:fee8bb4b62990dde32f5208e5989e5ee579cf7bb53fb366054f26e8ea6dbd983:distribution> a dcat:Distribution ;
+    dcat:accessURL <http://132.195.160.222:8081/submodels/aHR0cHM6Ly9leGFtcGxlLmNvbS9pZHMvc20vODQyMF85MDQyXzYwNjJfOTA2OQ> ;
+    dcat:mediaType "application/json" .
+
+<https://id.gs1.org/00/040471110035127242> dct:identifier "https://id.gs1.org/00/040471110035127242" .
+
+<https://id.gs1.org/00/040471110239002239> dct:identifier "https://id.gs1.org/00/040471110239002239" .
+
+<https://id.gs1.org/00/040471110242006132> dct:identifier "https://id.gs1.org/00/040471110242006132" .
+
+<https://id.gs1.org/00/040471110429158807> dct:identifier "https://id.gs1.org/00/040471110429158807" .
+
+<https://id.gs1.org/00/040471110673584704> dct:identifier "https://id.gs1.org/00/040471110673584704" .
+
+<https://id.gs1.org/00/040471110836956034> dct:identifier "https://id.gs1.org/00/040471110836956034" .
+
+<https://id.gs1.org/00/040471110844598110> dct:identifier "https://id.gs1.org/00/040471110844598110" .
+
+<https://id.gs1.org/00/040471110846759755> dct:identifier "https://id.gs1.org/00/040471110846759755" .
+

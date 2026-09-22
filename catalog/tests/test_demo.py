@@ -378,3 +378,35 @@ def test_aas_submodels_across_three_sources_replace_and_asset_identity(system):
     assert response.status_code == 200
     assert len(results()) == 2
     assert len(client.get("/datasets", params={"q": "Pump 001"}).json()) == 3
+
+
+def test_group_api_snapshot_is_findable_and_links_back_to_source(system):
+    client, _, _ = system
+    response = publish(client, TOKEN_A, "group-aas/catalog.ttl")
+    assert response.status_code == 200, response.json()
+    report = json.loads((DATA / "group-aas/catalog.report.json").read_text())
+    assert len(client.get("/datasets").json()) == report["submodels"]
+    dpp = client.get("/datasets", params={"q": "DPP-EU"}).json()
+    assert len(dpp) == 1 and "Template" in dpp[0]["title"]
+    detail = client.get(
+        "/datasets/detail",
+        params={"dataset_id": dpp[0]["dataset_id"], "graph": dpp[0]["metadata"]["graph"]},
+    ).json()
+    access = [
+        row["object"]
+        for row in detail["triples"]
+        if row["predicate"] == "http://www.w3.org/ns/dcat#accessURL"
+    ]
+    assert len(set(access)) == 1
+    assert access[0].startswith(report["source_api"] + "/submodels/")
+    rows = client.post(
+        "/sparql", json={"query": (DATA / "group-aas/submodels.rq").read_text()}
+    ).json()["results"]["bindings"]
+    assert len(rows) == report["submodels"]
+    assert sum("asset" in row for row in rows) == report["shell_linked_submodels"]
+    dpp_rows = [row for row in rows if "DPP-EU" in row["title"]["value"]]
+    assert len(dpp_rows) == 1 and "asset" not in dpp_rows[0] and "shell" not in dpp_rows[0]
+    assert (
+        dpp_rows[0]["semanticType"]["value"]
+        == "https://admin-shell.io/submodels/DigitalProductPassport/1/0"
+    )
