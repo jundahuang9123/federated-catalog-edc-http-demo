@@ -1,11 +1,7 @@
-.PHONY: test up-solid up-edc
+.PHONY: test up
 
 test:
 	python -m pytest
 
-up-solid:
-	CATALOG_MODE=solid docker compose --profile solid up --build
-
-up-edc:
-	CATALOG_MODE=edc docker compose --profile edc up --build
-
+up:
+	docker compose up --build

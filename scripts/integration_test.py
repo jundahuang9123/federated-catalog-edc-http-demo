@@ -1,116 +1,218 @@
 #!/usr/bin/env python3
-"""Owns an isolated Compose project; destroys ONLY that project's test volume."""
+"""Exercise the complete catalog-only HTTP demo in an isolated Compose project."""
+
 import json
-from http.client import RemoteDisconnected
-from pathlib import Path
 import subprocess
 import time
+from http.client import RemoteDisconnected
+from pathlib import Path
 from urllib.error import HTTPError, URLError
+from urllib.parse import quote
 from urllib.request import Request, urlopen
 from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parents[1]
-PROJECT = 'catalog-test-' + uuid4().hex[:10]
-COMPOSE = ['docker', 'compose', '-p', PROJECT, '-f', 'docker-compose.integration.yml']
-A, B = [f'https://pod.example/{name}/profile/card#me' for name in ('a', 'b')]
-base = ''
+PROJECT = "catalog-http-test-" + uuid4().hex[:10]
+COMPOSE = ["docker", "compose", "-p", PROJECT, "-f", "docker-compose.integration.yml"]
+
+PARTICIPANT_A = "urn:connector:participant-a"
+PARTICIPANT_B = "urn:connector:participant-b"
+TOKEN_A = "a1" * 32
+TOKEN_B = "b2" * 32
+INVALID_TOKEN = "c3" * 32
+
+base = ""
 
 
-def compose(*args):
-    return subprocess.run(COMPOSE + list(args), cwd=ROOT, check=True, capture_output=True, text=True).stdout
+def compose(*args: str) -> str:
+    return subprocess.run(
+        COMPOSE + list(args),
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
 
 
-def request(path, body=None, participant=None):
-    headers = {}
+def request(
+    path: str,
+    body: bytes | dict | None = None,
+    *,
+    token: str | None = None,
+    headers: dict[str, str] | None = None,
+) -> tuple[int, object]:
+    request_headers = dict(headers or {})
     if isinstance(body, dict):
         body = json.dumps(body).encode()
-        headers['Content-Type'] = 'application/json'
+        request_headers["Content-Type"] = "application/json"
     elif body is not None:
-        headers['Content-Type'] = 'text/turtle'
-    if participant:
-        headers['X-Participant-Id'] = participant
+        request_headers["Content-Type"] = "text/turtle"
+    if token:
+        request_headers["Authorization"] = f"Bearer {token}"
+
     try:
-        with urlopen(Request(base + path, data=body, headers=headers), timeout=30) as response:
+        with urlopen(
+            Request(base + path, data=body, headers=request_headers),
+            timeout=30,
+        ) as response:
             return response.status, json.load(response)
     except HTTPError as error:
         return error.code, json.load(error)
 
 
-def wait_ready():
+def wait_ready() -> None:
     global base
-    base = 'http://' + compose('port', 'catalog', '8000').strip()
-    for attempt in range(90):
+    base = "http://" + compose("port", "catalog", "8000").strip()
+    for _attempt in range(90):
         try:
-            if request('/ready')[0] == 200:
+            if request("/ready")[0] == 200:
                 return
         except (URLError, TimeoutError, ConnectionError, RemoteDisconnected):
             pass
         time.sleep(2)
-    raise RuntimeError('Catalog did not become ready')
+    raise RuntimeError("Catalog did not become ready")
 
 
-def publish(who, fixture):
-    return request('/catalog', (ROOT / 'demo-data' / fixture).read_bytes(), who)
+def publish(token: str, fixture: str, *, headers: dict[str, str] | None = None):
+    return request(
+        "/catalog",
+        (ROOT / "demo-data" / fixture).read_bytes(),
+        token=token,
+        headers=headers,
+    )
 
 
-def query(text):
-    code, result = request('/sparql', {'query': text})
+def query(text: str) -> dict:
+    code, result = request("/sparql", {"query": text})
     assert code == 200, result
+    assert isinstance(result, dict)
     return result
 
 
-def graph_snapshot(who):
-    from urllib.parse import quote
-    graph = 'urn:catalog:' + quote(who, safe='')
-    rows = query(f'SELECT ?s ?p ?o WHERE {{ GRAPH <{graph}> {{ ?s ?p ?o }} }}')['results']['bindings']
+def graph_snapshot(participant: str) -> set[str]:
+    graph = "urn:catalog:" + quote(participant, safe="")
+    rows = query(f"SELECT ?s ?p ?o WHERE {{ GRAPH <{graph}> {{ ?s ?p ?o }} }}")[
+        "results"
+    ]["bindings"]
     return {json.dumps(row, sort_keys=True) for row in rows}
 
 
-if __name__ == '__main__':
+def dataset_providers() -> dict[str, str | None]:
+    status, payload = request("/datasets")
+    assert status == 200, payload
+    assert isinstance(payload, list)
+    return {item["dataset_id"]: item.get("provider") for item in payload}
+
+
+def assert_rejected_without_mutation(
+    token: str, fixture: str, expected_status: int
+) -> None:
+    before_a = graph_snapshot(PARTICIPANT_A)
+    before_b = graph_snapshot(PARTICIPANT_B)
+    status, _payload = publish(token, fixture)
+    assert status == expected_status
+    assert graph_snapshot(PARTICIPANT_A) == before_a
+    assert graph_snapshot(PARTICIPANT_B) == before_b
+
+
+if __name__ == "__main__":
     try:
-        print(f'Starting disposable integration project {PROJECT}', flush=True)
-        compose('up', '-d', '--build')
+        print(f"Starting disposable integration project {PROJECT}", flush=True)
+        compose("up", "-d", "--build")
         wait_ready()
-        assert publish(A, 'participant-a/catalog-v1.ttl')[0] == 200
-        assert publish(B, 'participant-b/catalog-v1.ttl')[0] == 200
-        assert len(request('/datasets')[1]) == 3
-        assert request('/datasets/detail?dataset_id=https%3A%2F%2Fexample.org%2Flive-demo%2Fa-frame')[0] == 200
-        walls = (ROOT / 'demo-data/queries/walls.rq').read_text()
-        assert len(query(walls)['results']['bindings']) == 2
-        b_before = graph_snapshot(B)
-        assert publish(A, 'participant-a/catalog-v2.ttl')[0] == 200
-        a_after = graph_snapshot(A)
-        assert graph_snapshot(B) == b_before
-        assert not any('a-slabs' in row for row in a_after)
-        assert len(query(walls)['results']['bindings']) == 3
-        status, payload = publish(A, 'invalid/invalid-catalog.ttl')
-        assert status == 422 and payload['stage'] == 'validation'
-        assert graph_snapshot(A) == a_after
-        status, payload = publish('https://unregistered.example/me', 'participant-b/catalog-v1.ttl')
-        assert status == 403 and payload['stage'] == 'registry'
-        assert query('ASK {}')['boolean'] is True
-        for unsafe in ['DROP ALL', 'SELECT ???', 'SELECT * WHERE { SERVICE <http://example.org> { ?s ?p ?o } }']:
-            assert request('/sparql', {'query': unsafe})[0] == 400
-        compose('stop', 'registry')
-        status, payload = publish(A, 'participant-a/catalog-v1.ttl')
-        assert status == 422 and payload['stage'] == 'registry'
-        assert graph_snapshot(A) == a_after
-        assert request('/ready')[0] == 503
-        print('Recreating all containers; retaining the named volume', flush=True)
-        compose('down')
-        compose('up', '-d')
+
+        status, payload = publish(TOKEN_A, "participant-a/catalog-v1.ttl")
+        assert status == 200, payload
+        assert payload["participant_id"] == PARTICIPANT_A
+        assert payload["interface"] == "edc-http-adapter-simulator"
+
+        status, payload = publish(TOKEN_B, "participant-b/catalog-v1.ttl")
+        assert status == 200, payload
+        assert payload["participant_id"] == PARTICIPANT_B
+
+        assert_rejected_without_mutation(
+            INVALID_TOKEN,
+            "participant-a/catalog-v2.ttl",
+            401,
+        )
+        assert (
+            request(
+                "/catalog",
+                (ROOT / "demo-data/participant-a/catalog-v1.ttl").read_bytes(),
+            )[0]
+            == 401
+        )
+        assert (
+            publish(
+                TOKEN_A,
+                "participant-a/catalog-v1.ttl",
+                headers={"X-Participant-Id": PARTICIPANT_B},
+            )[0]
+            == 403
+        )
+
+        providers = dataset_providers()
+        assert len(providers) == 3
+        assert providers["https://example.org/live-demo/a-frame"] == PARTICIPANT_A
+        assert providers["https://example.org/live-demo/b-components"] == PARTICIPANT_B
+        status, detail = request(
+            "/datasets/detail?dataset_id=https%3A%2F%2Fexample.org%2Flive-demo%2Fa-frame"
+        )
+        assert status == 200 and detail["provider"] == PARTICIPANT_A
+
+        walls = (ROOT / "demo-data/queries/walls.rq").read_text()
+        assert len(query(walls)["results"]["bindings"]) == 2
+        assert query("ASK {}")["boolean"] is True
+
+        b_before = graph_snapshot(PARTICIPANT_B)
+        status, payload = publish(TOKEN_A, "participant-a/catalog-v2.ttl")
+        assert status == 200, payload
+        a_after = graph_snapshot(PARTICIPANT_A)
+        assert graph_snapshot(PARTICIPANT_B) == b_before
+        assert not any("a-slabs" in row for row in a_after)
+        assert any("a-panels" in row for row in a_after)
+        assert len(query(walls)["results"]["bindings"]) == 3
+
+        status, payload = publish(TOKEN_A, "invalid/invalid-catalog.ttl")
+        assert status == 422 and payload["stage"] == "validation"
+        assert graph_snapshot(PARTICIPANT_A) == a_after
+        assert graph_snapshot(PARTICIPANT_B) == b_before
+
+        for unsafe in [
+            "DROP ALL",
+            "SELECT ???",
+            "SELECT * WHERE { SERVICE <http://example.org> { ?s ?p ?o } }",
+        ]:
+            assert request("/sparql", {"query": unsafe})[0] == 400
+
+        compose("stop", "fuseki")
+        status, payload = publish(TOKEN_A, "participant-a/catalog-v1.ttl")
+        assert status == 502 and payload["stage"] == "store"
+        assert request("/ready")[0] == 503
+        compose("start", "fuseki")
         wait_ready()
-        assert len(request('/datasets')[1]) == 3
-        assert graph_snapshot(A) == a_after
-        assert graph_snapshot(B) == b_before
-        assert len(query(walls)['results']['bindings']) == 3
-        print('PASS: registry, SHACL, discovery, SPARQL, isolation, replacement and restart persistence')
+        assert graph_snapshot(PARTICIPANT_A) == a_after
+        assert graph_snapshot(PARTICIPANT_B) == b_before
+
+        print("Recreating all containers while retaining the named volume", flush=True)
+        compose("down")
+        compose("up", "-d")
+        wait_ready()
+        assert len(dataset_providers()) == 3
+        assert graph_snapshot(PARTICIPANT_A) == a_after
+        assert graph_snapshot(PARTICIPANT_B) == b_before
+        assert len(query(walls)["results"]["bindings"]) == 3
+        print(
+            "PASS: bearer identity, SHACL, discovery, SPARQL, graph isolation, "
+            "replacement, dependency failure and persistence",
+            flush=True,
+        )
     except Exception:
         try:
-            print(compose('logs', '--tail=80'))
-        except Exception:
-            pass
+            print(compose("logs", "--tail=100"))
+        except subprocess.CalledProcessError as log_error:
+            print(f"Could not collect Compose logs: {log_error}")
         raise
     finally:
-        print(f'Removing isolated test project {PROJECT}', flush=True)
-        compose('down', '--volumes', '--remove-orphans')
+        print(f"Removing isolated test project {PROJECT}", flush=True)
+        compose("down", "--volumes", "--remove-orphans")

@@ -5,14 +5,8 @@
     request_body {
         max_size 2MB
     }
+    encode zstd gzip
     reverse_proxy catalog:8000 {
         header_up -X-Participant-Id
-        header_up -X-Participant-WebID
     }
-}
-{$PUBLISHER_HOST} {
-    root * /srv/publisher
-    encode zstd gzip
-    try_files {path} /index.html
-    file_server
 }

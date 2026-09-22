@@ -1,50 +1,142 @@
 # Live demonstration script
 
-Complete [EXTERNAL_TESTS.md](EXTERNAL_TESTS.md) before calling this a live TMDT demo. Use two separate browser profiles for A and B so sessions cannot be confused. The publisher's token override stays empty.
+## State the scope first
 
-## Prepare once
+Use this wording at the start:
 
-1. Deploy the root stack and verify the two HTTPS origins and `/ready`.
-2. Obtain two controlled participant WebIDs with Pods on TMDT. Put both WebIDs into the external registry using the existing administrative process. Keep an optional third identity unregistered.
-3. Upload `demo-data/participant-a/catalog-v1.ttl` to A's `<Pod root>/catalog/cat.ttl`; upload B's v1 to B's corresponding resource. Use the Pod's normal authenticated file management workflow. The central server does not create these resources.
-4. Confirm each participant can read its catalog in the publisher. Fixture URLs at example.org are illustrative metadata, not promised downloadable files; replace them with controlled demo resource URLs if downloads will be demonstrated.
-5. Rehearse the request-capture step from `publisher/docs/auth-findings.md` in a controlled environment. The default local catcher is a development diagnostic; a deployed HTTPS publisher may need a controlled HTTPS catcher/proxy because browsers can block mixed content or local-network access. Do not publicly deploy the permissive catcher.
-6. Check Authorization scheme, DPoP presence, token `cnf.jkt`, proof `htu`, `htm=POST`, `ath`, public JWK and timestamp. A decoded capture is diagnostic only; then perform the actual push against the real catalog.
+> This demonstration starts at a custom HTTP delivery boundary. The command-line tool represents the last step an adapter beside an EDC connector could perform: it sends an authenticated DCAT/RDF snapshot to the federated catalog. It does not run Eclipse EDC or demonstrate DSP, contract negotiation, policy enforcement, a control plane, or a data plane.
 
-## Presentation
+Calling the tool an **EDC HTTP adapter simulator** keeps the architectural intention clear without presenting it as an EDC connector.
 
-### 1. First participant
+## Prepare
 
-Open the catalog's Datasets page. In profile A, open the publisher, log into the configured TMDT provider, load `catalog/cat.ttl`, inspect the RDF preview, and publish to `https://<CATALOG_HOST>/catalog`.
+1. Complete [the acceptance checklist](EXTERNAL_TESTS.md).
+2. Confirm `https://<CATALOG_HOST>/ready` returns 200.
+3. Put the configured participant mapping in an ignored `.env.simulator` on the presentation machine.
+4. Open `https://<CATALOG_HOST>/` in a browser.
+5. Keep a terminal in the repository root.
+6. Record the deployed commit and whether the Fuseki index is fresh. Exact counts below assume a fresh index containing only these fixtures.
 
-Show accepted response with A's authenticated participant ID and encoded named-graph URI. Refresh discovery: “Frame export — revision 1” and “Floor package” appear. Show dataset detail.
+The mapping should contain at least these participant IDs, each with its own token:
 
-### 2. Second participant
+```text
+urn:demo:participant:a
+urn:demo:participant:b
+```
 
-In profile B, log in, load B's Pod resource and publish. Refresh discovery: “Component passport set” appears alongside A's two datasets. Run the Participants query to show separate named graphs. Other pre-existing participants may also appear; scope the example query to the two demonstrated graph IRIs if necessary.
+Never display the token values during the presentation.
 
-### 3. Cross-participant SPARQL
+## 1. Show an empty or current catalog
 
-Choose All datasets. Show graph, dataset and title bindings. Choose the construction wall query: it returns A's frame dataset and B's component passports. Their titles do not contain “wall”; discovery uses `cx:describesAssetType ifc:IfcWall` across BIM/AAS representations.
+Open the catalog UI and `/status`. Explain that Fuseki is a materialized metadata index. Participant applications remain responsible for producing their DCAT/RDF; this demo begins when an adapter delivers that RDF.
 
-### 4. Snapshot update
+If the index is intentionally fresh, `/status` should report zero graphs and zero datasets. Existing data is acceptable if you record the starting counts and describe the expected changes instead of claiming absolute totals.
 
-Replace A's Pod `catalog/cat.ttl` with `participant-a/catalog-v2.ttl` using the normal Pod write workflow. In publisher A, reload the Pod resource, preview revision 2, and republish.
+## 2. Publish participant A
 
-Refresh discovery: frame revision 2 replaces revision 1, floor package disappears, and envelope package appears. B remains unchanged. The wall query now returns three datasets for these participants. Republish v1 to reset A when needed; no manual database editing is necessary.
+```bash
+python3 scripts/edc_http_simulator.py \
+  --catalog-url https://<CATALOG_HOST>/catalog \
+  --participant urn:demo:participant:a \
+  --env-file .env.simulator \
+  --rdf demo-data/participant-a/catalog-v1.ttl
+```
 
-### 5. Validation rejection
+Show the accepted response. It includes:
 
-While logged in as A, load `invalid/invalid-catalog.ttl` through the publisher's local file input and publish. This lacks the required distribution. Show HTTP 422 with `stage=validation`. Refresh discovery to show the valid revision 2 still exists. The invalid fixture need not overwrite the valid Pod resource.
+- participant `urn:demo:participant:a`;
+- an encoded `urn:catalog:...` graph URI;
+- the request ID.
 
-### 6. Membership rejection
+Refresh the UI. A v1 contributes “Frame export — revision 1” and “Floor package”. Explain that the participant comes from the bearer-token mapping, not from an RDF publisher field or request header.
 
-Log in as the third unregistered controlled identity. Load valid RDF and attempt publication. Show HTTP 403 with `stage=registry`. Confirm no new graph or dataset appears. A forged participant header must not impersonate a registered identity in the public deployment.
+## 3. Publish participant B
 
-### 7. Persistence (optional during presentation)
+```bash
+python3 scripts/edc_http_simulator.py \
+  --catalog-url https://<CATALOG_HOST>/catalog \
+  --participant urn:demo:participant:b \
+  --env-file .env.simulator \
+  --rdf demo-data/participant-b/catalog-v1.ttl
+```
 
-After the successful publications, run `docker compose down`, followed by `docker compose up -d`. Wait for readiness and refresh discovery/query. The previous datasets remain. Do not add `--volumes`.
+Refresh discovery. “Component passport set” now appears beside A's two datasets. A fresh index has two participant graphs and three datasets.
 
-## Record evidence
+## 4. Query across participant graphs
 
-Record commit ID, URLs, timestamp, participant graph IDs, response status/stage and expected dataset counts. Keep token values, DPoP proofs, credentials and private Pod content out of screenshots or Git commits. Use the acceptance checklist to distinguish observed results from expectations.
+Use the SPARQL page in the UI with the examples from `demo-data/queries/`:
+
+- `participants.rq` shows two distinct named graphs;
+- `datasets.rq` lists all three datasets and their graph;
+- `walls.rq` finds the IFC and AAS descriptions linked by `cx:describesAssetType ifc:IfcWall`;
+- `ask.rq` confirms at least one DCAT dataset exists.
+
+Before the update, `walls.rq` returns two datasets on a fresh index. Their titles do not need the word “wall”; the result comes from the shared semantic property. Explain that this query runs over named graphs already materialized in one Fuseki dataset. It is not distributed SPARQL federation.
+
+## 5. Replace A's snapshot
+
+```bash
+python3 scripts/edc_http_simulator.py \
+  --catalog-url https://<CATALOG_HOST>/catalog \
+  --participant urn:demo:participant:a \
+  --env-file .env.simulator \
+  --rdf demo-data/participant-a/catalog-v2.ttl
+```
+
+Refresh the UI:
+
+- frame revision 2 replaces revision 1;
+- Floor package disappears;
+- Envelope package appears;
+- participant B's Component passport set remains.
+
+A fresh index still has three datasets, and `walls.rq` now returns three. This demonstrates participant-scoped snapshot replacement and isolation.
+
+## 6. Reject invalid RDF without losing A v2
+
+```bash
+python3 scripts/edc_http_simulator.py \
+  --catalog-url https://<CATALOG_HOST>/catalog \
+  --participant urn:demo:participant:a \
+  --env-file .env.simulator \
+  --rdf demo-data/invalid/invalid-catalog.ttl
+```
+
+The command exits unsuccessfully and shows HTTP 422 with `stage: validation`. Refresh discovery and re-run the wall query. A's valid v2 graph and B's graph remain unchanged because validation happened before the Graph Store `PUT`.
+
+## 7. Reject an unknown credential
+
+Use a temporary invalid value without displaying any valid token:
+
+```bash
+EDC_SIMULATOR_TOKEN=invalid-demo-token \
+python3 scripts/edc_http_simulator.py \
+  --catalog-url https://<CATALOG_HOST>/catalog \
+  --rdf demo-data/participant-a/catalog-v1.ttl
+```
+
+The response is HTTP 401 with `stage: auth`. The error does not disclose which participant or token was expected. Confirm that discovery counts have not changed.
+
+## 8. Show persistence
+
+If restarting during the presentation is acceptable:
+
+```bash
+docker compose down
+docker compose up -d
+```
+
+Wait for `/ready`, then refresh the UI. The accepted participant snapshots remain in the `fuseki-data` volume. Do not add `--volumes`.
+
+## Evidence to record
+
+- deployed repository URL and commit;
+- catalog HTTPS URL and certificate status;
+- timestamp and request IDs;
+- authenticated participant IDs and returned graph IDs;
+- HTTP status and stage for rejected requests;
+- dataset, graph and wall-query counts before and after replacement;
+- successful restart persistence check, if performed;
+- the explicit scope statement used in the presentation.
+
+Exclude bearer tokens, `.env` contents, Fuseki credentials and private server information from screenshots and reports.

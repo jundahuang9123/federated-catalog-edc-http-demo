@@ -1,34 +1,73 @@
-# External TMDT acceptance — pending
+# Deployment acceptance checklist
 
-These checks require real infrastructure and are intentionally separate from ordinary unit tests. No real identity, Pod, registry membership or remote server has been provisioned by this repository.
+These checks establish what was observed on a particular server. Keep credentials out of the completed record.
 
-Fill in non-secret operational values:
+## Record the deployment
 
-| Field | Value |
+| Field | Observed value |
 | --- | --- |
-| Deployment commit | pending |
-| Server OS / architecture | pending |
+| Repository URL | pending |
+| Commit | pending |
+| Test/CI result URL | pending |
+| Server OS and architecture | pending |
+| Docker and Compose versions | pending |
 | Catalog HTTPS origin | pending |
-| Publisher HTTPS origin | pending |
-| TMDT dataspace portal | https://solid-dataspace-test.tmdt.info/ (user-provided) |
-| Exact TMDT issuer | https://solid-community-server.tmdt.info/ (metadata verified 2026-09-21) |
-| Expected token audience | pending |
-| Registry container URL | https://solid-community-server.tmdt.info/semanticdatacatalog/public/test/ (prototype default, contract verified; confirm intended memberships) |
-| A WebID / Pod catalog URL | pending |
-| B WebID / Pod catalog URL | pending |
-| Unregistered C WebID | pending |
+| Test date and operator | pending |
+| Backup/restore test reference | pending |
 
-- [ ] Certificate trusted by a browser; HTTP redirects to HTTPS; no public 8000/3030 ports.
-- [ ] Registry and member resources are readable from the catalog server without inventing a new registry service.
-- [ ] Participant WebIDs are controlled by the expected TMDT issuer. Confirm issuer authority/ownership assumptions with TMDT; this demo pins one trusted provider and does not implement general WebID issuer discovery.
-- [ ] Publisher login/redirect succeeds on its real HTTPS origin.
-- [ ] A and B load RDF from their real Pods, not only local fixtures.
-- [ ] Existing request-capture tooling shows DPoP-bound authentication material for the intended destination; captures contain no reusable raw tokens in committed evidence.
-- [ ] Catalog accepts actual A and B publications with strict OIDC/DPoP enabled. Verify issuer, audience, cnf.jkt, ath, htu, htm and signature compatibility; do not weaken validation to make a demonstration pass.
-- [ ] Third unregistered identity receives 403 at registry stage.
-- [ ] Invalid fixture receives 422 at validation stage; previous snapshot survives.
-- [ ] A update removes old triples; B remains unchanged; Construct-DCAT query changes as documented.
-- [ ] Server/container recreation retains Fuseki data; `/ready` recovers.
-- [ ] Repeat dependency audit before the public demonstration (the preparation-time npm audit reports zero advisories; see AUDIT.md).
+## Configuration and network
 
-For repeatable local integration, run `python3 scripts/integration_test.py`; it does not prove any box involving TMDT or HTTPS. If the provider issues opaque tokens or uses incompatible token claims/nonce behavior, record the actual mismatch and adapt the verifier/publisher with tests before proceeding.
+- [ ] `python3 scripts/check_config.py` succeeds without printing secrets.
+- [ ] `docker compose config --quiet` succeeds.
+- [ ] `EDC_DEMO_PARTICIPANTS` contains at least two participant URIs with different 64-or-more-character hexadecimal tokens.
+- [ ] Only the catalog DNS name is required; no publisher hostname is configured.
+- [ ] The browser trusts the HTTPS certificate and HTTP redirects to HTTPS.
+- [ ] The public server exposes 80/443 as intended and does not expose catalog port 8000 or Fuseki port 3030.
+- [ ] `.env` permissions and backup location follow the institution's secret-handling rules.
+- [ ] `GET /health` and `GET /ready` return 200.
+- [ ] `GET /status` reports `mode: http-demo`, the expected participant count and ready dependencies.
+
+## Ingestion and isolation
+
+Start from a fresh index for exact counts, or record the starting graph and dataset counts.
+
+- [ ] Simulator A publishes `demo-data/participant-a/catalog-v1.ttl` over HTTPS and receives participant A plus A's graph ID.
+- [ ] Simulator B publishes `demo-data/participant-b/catalog-v1.ttl` and receives participant B plus a different graph ID.
+- [ ] Discovery shows A's two v1 datasets and B's one dataset.
+- [ ] Dataset provider values come from authenticated graph ownership.
+- [ ] Publishing A v2 removes A's old Floor package, adds Envelope package and keeps B unchanged.
+- [ ] Repeating one accepted snapshot does not create another participant graph.
+- [ ] An invalid bearer token receives 401 and creates no graph.
+- [ ] The invalid RDF fixture receives 422 at `stage: validation` and leaves A's last valid snapshot intact.
+- [ ] An unsupported media type receives 415.
+- [ ] A payload above the configured bound is rejected.
+- [ ] Application responses include a request ID that can be correlated with sanitized server logs.
+
+## Discovery and query
+
+- [ ] `GET /datasets` returns the expected entries.
+- [ ] `GET /datasets/detail` returns triples and the correct participant for one A and one B dataset.
+- [ ] `datasets.rq` returns datasets from both named graphs.
+- [ ] `participants.rq` shows the two graph IDs.
+- [ ] `walls.rq` returns two results before A v2 and three after A v2 on a fresh index.
+- [ ] `ask.rq` returns true.
+- [ ] SPARQL Update, `SERVICE` and `FROM` requests are rejected.
+
+## Persistence and operations
+
+- [ ] `docker compose down` followed by `docker compose up -d` retains both accepted snapshots.
+- [ ] `/ready` becomes healthy again after the restart.
+- [ ] A stopped-volume backup has been restored successfully into a separate Compose project.
+- [ ] Catalog, Fuseki and Caddy logs contain no bearer tokens or Fuseki password.
+- [ ] The operator knows that `docker compose down --volumes` removes the index and Caddy state.
+- [ ] The deployed image versions and commit are recorded for the presentation.
+
+## Claim review
+
+- [ ] The UI, repository description and presentation call this an **EDC HTTP adapter simulation** or **HTTP ingestion boundary demo**.
+- [ ] The presentation explicitly states that no Eclipse EDC runtime or DSP exchange is executed.
+- [ ] No evidence is described as contract negotiation, policy enforcement, control-plane behavior or data-plane transfer.
+- [ ] Cross-participant queries are described as queries over a central materialized Fuseki dataset, not distributed federation.
+- [ ] Only approved public demo metadata is stored.
+
+Passing this checklist supports the HTTP/DCAT boundary claim. It does not certify interoperability with Eclipse EDC or any dataspace protocol.

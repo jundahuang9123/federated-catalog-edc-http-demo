@@ -4,15 +4,14 @@ from fastapi import APIRouter
 
 
 class IngestSource(ABC):
-    """Mode-specific push entrypoint.
+    """Catalog push entrypoint.
 
     Expected push contract:
-    POST /catalog with an RDF request body, a content type that identifies the
-    RDF serialization, and a declared participant id. The participant id may be
-    supplied as the X-Participant-Id header or participant_id query/form field.
+    POST /catalog with an RDF request body, a supported RDF content type, and a
+    bearer token mapped to one configured participant.
 
-    Successful pushes return 200. Registry rejection or SHACL rejection returns
-    a readable 4xx response with errors.
+    Successful pushes return 200. Authentication or SHACL rejection returns a
+    readable 4xx response with errors.
     """
 
     @abstractmethod

@@ -1,9 +1,25 @@
-# Construction demo fixtures
+# Construction catalog fixtures
 
-Vocabulary: https://github.com/jundahuang9123/ConstructDCAT at commit `2effb755897b99342f8405afac96425f6c13649c`, version 0.1.0 (CC BY 4.0; Junda Huang). The fixtures use its exact `https://w3id.org/construct-dcat#` terms: `BIMDataset`, `AASDataset`, `describesAssetType`, `usesOntology`, `hasAASSubmodel`.
+These files provide deterministic DCAT/RDF snapshots for two simulated participants. The participant identity is selected by the simulator credential; it is not taken from the fixture.
 
-Participant A supplies IFC metadata; B supplies AAS metadata. Their titles deliberately do not contain “wall”. Both use `cx:describesAssetType ifc:IfcWall`; the query works through the semantic anchor, without inference or keyword matching. All datasets also explicitly have `dcat:Dataset` type.
+## Snapshots
 
-A v1 has frame and slab datasets. A v2 updates the frame title, removes slabs, and adds panels carrying a wall anchor. B remains unchanged. Query wall counts: 2 before and 3 after A's update. Dataset counts: 3 before and 3 after.
+- `participant-a/catalog-v1.ttl` contains Frame export — revision 1 and Floor package.
+- `participant-a/catalog-v2.ttl` updates the frame, removes Floor package and adds Envelope package.
+- `participant-b/catalog-v1.ttl` contains Component passport set.
+- `invalid/invalid-catalog.ttl` deliberately violates the catalog shape and demonstrates rejection without losing the last valid snapshot.
 
-The example.org resource IDs and download URLs are deterministic illustrative metadata, not hosted files or real participant WebIDs. The authenticated publisher determines graph ownership. Copy each fixture into its real Pod at `catalog/cat.ttl`; the operator can replace example distribution URLs with controlled resources before the real presentation. No data file contents are copied into the central index.
+Participant A supplies IFC/BIM metadata and participant B supplies AAS metadata. Titles deliberately omit the word “wall”. Both use `cx:describesAssetType ifc:IfcWall`, so `queries/walls.rq` joins their semantic descriptions without inference or keyword matching.
+
+On a fresh index, A v1 plus B v1 produces three datasets and two wall-query results. Replacing A v1 with A v2 keeps three datasets and produces three wall-query results. B remains unchanged.
+
+## Query examples
+
+- `queries/datasets.rq` lists graph, dataset and title.
+- `queries/participants.rq` lists distinct participant graph IDs.
+- `queries/walls.rq` finds BIM and AAS wall descriptions.
+- `queries/ask.rq` checks whether the index contains any DCAT dataset.
+
+The fixtures use [ConstructDCAT](https://github.com/jundahuang9123/ConstructDCAT) at commit `2effb755897b99342f8405afac96425f6c13649c`, version 0.1.0 (CC BY 4.0; Junda Huang), including the `https://w3id.org/construct-dcat#` terms `BIMDataset`, `AASDataset`, `describesAssetType`, `usesOntology` and `hasAASSubmodel`.
+
+The `example.org` identifiers and download URLs are illustrative metadata. No referenced data-file content is transferred or stored by this demo.

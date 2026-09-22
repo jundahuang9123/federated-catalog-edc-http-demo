@@ -12,4 +12,3 @@ def test_core_does_not_import_modes() -> None:
             if isinstance(node, ast.ImportFrom):
                 module = node.module or ""
                 assert not module.startswith("modes"), path
-

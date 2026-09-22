@@ -1,42 +1,60 @@
 # Read-only SPARQL
 
-Open the SPARQL navigation link in the catalog. Choose an example, edit it, and run. SELECT produces a table; hover over cells to inspect RDF type/datatype/language. ASK reports true/false. All values are rendered as text.
+The catalog exposes bounded SELECT and ASK queries at:
+
+```http
+POST /sparql
+Content-Type: application/json
+
+{"query":"SELECT ..."}
+```
+
+Results use the standard SPARQL JSON shape returned by Fuseki. The catalog UI provides an editor and displays SELECT bindings or an ASK boolean.
+
+## Example
 
 ```bash
-curl -sS https://<CATALOG_HOST>/sparql \
+python3 - <<'PY' > /tmp/catalog-query.json
+import json
+from pathlib import Path
+
+print(json.dumps({"query": Path("demo-data/queries/datasets.rq").read_text()}))
+PY
+
+curl --fail \
   -H 'Content-Type: application/json' \
-  --data '{"query":"ASK { GRAPH ?g { ?s ?p ?o } }"}'
+  --data-binary @/tmp/catalog-query.json \
+  https://<CATALOG_HOST>/sparql
 ```
 
-Responses use SPARQL Results JSON (`head.vars`, `results.bindings`, or `boolean`). Each bound term retains `type`, `value`, and any `datatype` / `xml:lang` supplied by Fuseki. Internal discovery can keep flattened strings.
+Ready-to-use queries are in `demo-data/queries/`:
 
-## Boundaries
+- `datasets.rq` lists DCAT datasets with their named graph and title;
+- `participants.rq` lists participant graph IDs;
+- `walls.rq` finds BIM and AAS datasets linked to the IFC wall class;
+- `ask.rq` checks whether any DCAT dataset exists.
 
-- SELECT and ASK only; UPDATE, INSERT, DELETE, LOAD, CLEAR, CREATE, DROP, MOVE, COPY and ADD are rejected. CONSTRUCT/DESCRIBE are intentionally not supported yet.
-- Parser-based validation rejects remote SERVICE clauses (including nested/SILENT), FROM/FROM NAMED, and custom extension functions. Undefined prefixes and malformed syntax return 400.
-- 32 KiB request body, 500 SELECT rows, 2 MiB response, 10-second application timeout, and at most two simultaneous user queries by default. Limit settings are environment-configurable.
-- Fuseki also has a server-side 10-second query timeout in `deploy/fuseki.ttl`. Increasing the application timeout does not change that server limit.
-- SELECT is wrapped in a limited outer query, preserving projections, aggregates and inner LIMIT/OFFSET. Presentation ordering across the subquery boundary is not guaranteed; the endpoint is for inspection, not stable cursor pagination.
-- Literal Unicode is supported; escaped Unicode spellings are rejected to avoid ambiguity in the query wrapper.
-- Statuses: 400 bad query/JSON or unsupported operation; 413 oversized request; 429 capacity; 502 backend failure/oversized result; 504 timeout.
+## Restrictions
 
-Queries can read the central index's named graphs. There is no per-graph read authorization. Publish only metadata intended to be discoverable by all demo visitors.
+The endpoint accepts SELECT and ASK only. It rejects:
 
-## Examples
+- SPARQL Update forms;
+- `SERVICE` remote requests;
+- `FROM` and `FROM NAMED` dataset clauses;
+- extension function calls;
+- malformed JSON or a missing `query` string.
 
-Versioned files: `demo-data/queries/datasets.rq`, `participants.rq`, `walls.rq`, `ask.rq`. The browser copies are in `catalog/ui/queries.json`.
+The service adds an outer row limit to SELECT and bounds request bytes, response bytes, execution time and concurrent queries. Configure these limits with:
 
-The construction query uses exact terms from ConstructDCAT version 0.1.0:
+| Setting | Default |
+| --- | --- |
+| `SPARQL_MAX_REQUEST_BYTES` | 32768 |
+| `SPARQL_MAX_ROWS` | 500 |
+| `SPARQL_MAX_RESPONSE_BYTES` | 2097152 |
+| `SPARQL_TIMEOUT_SECONDS` | 10 |
 
-```sparql
-PREFIX cx: <https://w3id.org/construct-dcat#>
-PREFIX dcat: <http://www.w3.org/ns/dcat#>
-PREFIX ifc: <https://standards.buildingsmart.org/IFC/DEV/IFC4_3/OWL#>
-SELECT ?graph ?dataset WHERE {
-  GRAPH ?graph {
-    ?dataset a dcat:Dataset ; cx:describesAssetType ifc:IfcWall .
-  }
-}
-```
+This interface intentionally reads the materialized catalog index without per-participant authorization. Do not ingest confidential metadata.
 
-The fixture's BIM and AAS datasets share the same explicit asset-type IRI. No free-text match, ontology fetch, or inference is needed. Expected wall matches: two after A v1 + B v1, three after A v2 + B v1.
+## Meaning of “federated” here
+
+Each authenticated participant owns a separate named graph, and one query can inspect several of those graphs. All graphs are stored in one central Fuseki dataset. The endpoint does not send subqueries to remote SPARQL services, so it should not be described as distributed SPARQL federation.

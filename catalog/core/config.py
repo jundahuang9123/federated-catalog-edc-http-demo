@@ -25,13 +25,13 @@ class CatalogSettings:
 
 
 def get_settings() -> CatalogSettings:
-    return CatalogSettings(mode=os.getenv("CATALOG_MODE", "").strip().lower())
+    return CatalogSettings(mode=os.getenv("CATALOG_MODE", "http-demo").strip().lower())
 
 
 def load_active_mode() -> ModeRegistration:
     settings = get_settings()
-    if settings.mode not in {"solid", "edc"}:
-        raise RuntimeError("CATALOG_MODE must be set to either 'solid' or 'edc'")
+    if settings.mode != "http-demo":
+        raise RuntimeError("CATALOG_MODE must be set to 'http-demo'")
 
-    module = import_module(f"modes.{settings.mode}")
+    module = import_module("modes.http_demo")
     return module.register()

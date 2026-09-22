@@ -1,97 +1,172 @@
 # Deployment and server handover
 
-## Planned topology
+## Target topology
 
-One Linux VM runs Docker Compose. Caddy serves the built publisher and proxies catalog requests. Fuseki uses a named volume and an internal network. Solid Pods, identities and the registry stay on existing TMDT infrastructure.
+One Linux server runs three containers:
 
-A reasonable small-demo starting point is 2 vCPUs, 4 GB RAM and 20 GB of persistent disk, to be adjusted after measurement. This is a planning estimate, not a tested capacity guarantee. Ask the supervisor whether the VM is amd64 or arm64 and whether outbound internet access is restricted. The catalog needs access to the registry and configured issuer/JWKS; builds need package and container registries.
+```text
+Internet :80/:443 -> Caddy -> FastAPI catalog -> Fuseki/TDB2 volume
+```
 
-## Prerequisites
+The deployment needs one DNS name for the catalog. Caddy obtains and renews the HTTPS certificate. FastAPI and Fuseki have no published host ports.
 
-- Linux with Docker Engine and Docker Compose v2 (`docker compose version`). Follow your institution's installation policy.
-- SSH access with permission to use Docker. Python 3 is useful for the configuration check and test script.
-- Two DNS A/AAAA records, e.g. `catalog.example.org` and `publisher.example.org`, directed to the VM. Avoid an AAAA record unless IPv6 works.
-- Inbound TCP 80/443 to Caddy for automatic certificates and HTTPS. Do not open 8000 or 3030.
-- Exact external TMDT URLs and controlled participants; confirm the issuer's expected `aud` and JWT/DPoP support.
+This stack demonstrates a custom HTTP ingestion boundary. It does not install or connect an Eclipse EDC control plane or data plane and does not perform DSP negotiation, contract agreement, transfer orchestration, or policy enforcement.
 
-If the supervisor provides an institutional reverse proxy, a subpath-only URL, private-only DNS, or a server without Docker, this deployment needs adaptation. Do not guess or disable certificate verification. The provided layout expects two HTTPS origins without URL subpaths.
+## Information to obtain from the supervisor
 
-## Verified TMDT defaults
+- server IP address, SSH user and permitted authentication method;
+- Linux distribution and CPU architecture;
+- Docker Engine and Docker Compose v2 availability;
+- one DNS A record, and an AAAA record only if IPv6 reaches the server;
+- permission for inbound TCP 80 and 443;
+- outbound access to the configured container registries;
+- backup location and operational owner.
 
-The user-provided portal is [solid-dataspace-test.tmdt.info](https://solid-dataspace-test.tmdt.info/). Its [public configuration](https://solid-dataspace-test.tmdt.info/config.js) recommends the TMDT Solid provider. The provider's [OIDC metadata](https://solid-community-server.tmdt.info/.well-known/openid-configuration) reports the exact issuer `https://solid-community-server.tmdt.info/`; retain the trailing slash. The portal itself serves HTML at the OIDC discovery path and must not be used as the issuer.
+A small demonstration can start with 2 vCPUs, 4 GB RAM and 20 GB persistent disk, then be adjusted from measurement. This is a planning estimate rather than a capacity guarantee.
 
-The prototype registry `https://solid-community-server.tmdt.info/semanticdatacatalog/public/test/` was checked on 2026-09-21: it serves RDF, contains two member resources, and the existing registry reader resolves two WebIDs. These are now the example configuration defaults. Confirm the intended participant memberships before publishing. This read-only check does not establish control of those identities, Pod access, or successful browser authentication.
+The provided Caddy configuration expects to manage HTTPS directly at a hostname. An institutional reverse proxy, private-only DNS, a URL subpath, or a server without Docker requires a deployment-specific adaptation.
 
-## Environment
+## Configure the environment
 
-Copy `.env.example` to `.env`, restrict its filesystem permissions (`chmod 600 .env`), and replace placeholders. It contains no working secrets.
+```bash
+git clone <this-repository-url>
+cd federated-catalog-edc-http-demo
+cp .env.example .env
+chmod 600 .env
+```
 
-| Setting | Meaning |
+Generate the Fuseki password and each participant token independently:
+
+```bash
+openssl rand -hex 32
+```
+
+Paste the values into `.env`. The participant configuration is one JSON object on one line:
+
+```dotenv
+EDC_DEMO_PARTICIPANTS={"urn:demo:participant:a":"<token-a>","urn:demo:participant:b":"<token-b>"}
+```
+
+Each production demo token must contain at least 32 random bytes encoded as 64 or more hexadecimal characters, and each participant must have a different token. Participant keys must be URI-shaped identifiers. They can be project URNs; they do not need to resolve on the Web.
+
+| Setting | Purpose |
 | --- | --- |
-| `CATALOG_HOST` | Catalog DNS name, no scheme/path |
-| `PUBLISHER_HOST` | Publisher DNS name, different from catalog |
-| `ACME_EMAIL` | Operator contact for TLS certificate management |
-| `FUSEKI_PASSWORD` | Generate with `openssl rand -hex 32`; save only in `.env` |
-| `FUSEKI_IMAGE` | Default `stain/jena-fuseki:5.1.0`; review image updates before use |
-| `SOLID_REGISTRY_URL` | Actual readable TMDT LDP registry container |
-| `SOLID_REGISTRY_CONTRACT_PATH` | Container path `config/solid-registry-contract.yaml`; keep unless contract changes |
-| `SOLID_REGISTRY_CACHE_TTL_SECONDS` | Default 0 rechecks publication membership; positive values introduce that much revocation delay; expired caches fail closed |
-| `SOLID_OIDC_ISSUER` | Exact trusted provider issuer, including trailing slash if present |
-| `SOLID_OIDC_AUDIENCE` | Expected audience; defaults to `solid`; confirm with actual TMDT tokens |
-| `SPARQL_*` | Request, row, response-byte and application timeout bounds |
+| `CATALOG_HOST` | One DNS hostname, without scheme, port or path |
+| `ACME_EMAIL` | Operator contact used by Caddy certificate management |
+| `CATALOG_MODE` | Must be `http-demo` |
+| `CATALOG_PUBLIC_URL` | `https://` followed by `CATALOG_HOST` |
+| `CATALOG_CORS_ORIGINS` | Optional comma-separated HTTPS browser origins; leave empty for the CLI demo |
+| `CATALOG_MAX_INGEST_BYTES` | FastAPI request-body limit; default 2 MiB |
+| `CATALOG_STARTUP_WAIT_SECONDS` | Time allowed for Fuseki to become reachable |
+| `EDC_DEMO_PARTICIPANTS` | JSON mapping participant URI to its private demo bearer token |
+| `FUSEKI_IMAGE` | Fuseki image tag reviewed for this deployment |
+| `FUSEKI_PASSWORD` | Independent random hexadecimal admin password |
+| `FUSEKI_TIMEOUT_SECONDS` | Internal Fuseki request timeout |
+| `SPARQL_*` | Bounds for public read-only queries |
 
-Root Compose fixes `CATALOG_MODE=solid`, `SOLID_AUTH_MODE=oidc`, `SOLID_AUTH_REQUIRE_DPOP=true`, `FUSEKI_URL=http://fuseki:3030/solid` and `FUSEKI_USER=admin`. It derives `CATALOG_PUBLIC_URL` and `CATALOG_CORS_ORIGINS` from the hostnames. Those URL fields in `.env.example` also document the variables used when running the application directly.
+The root Compose file supplies the internal `FUSEKI_URL` as `http://fuseki:3030/catalog`. Do not place tokens or the Fuseki password in Git, screenshots, shell transcripts, issue reports or browser code.
 
-Compose builds the publisher with the public catalog's full `/catalog` URL and the same issuer. Changing those values requires rebuilding the reverse-proxy image. The UI still permits a participant to choose another target. Use only the intended controlled endpoint for authenticated publications.
+## Validate and start
 
-Do not put passwords in `VITE_*` variables: these are included in browser assets. Never paste access tokens into Git or issue reports. The publisher's manual bearer-token override is a development tool, not the production DPoP path.
-
-## Start and verify
+Run the checks before starting containers:
 
 ```bash
 python3 scripts/check_config.py
 docker compose config --quiet
 docker compose up -d --build
 docker compose ps
-curl --fail https://<CATALOG_HOST>/health
-curl --fail https://<CATALOG_HOST>/ready
 ```
 
-`/health` confirms the process is alive; `/ready` checks registry and Fuseki and returns 503 on critical dependency failure. `/status` gives discovery counts and dependency information. Readiness does not prove browser Solid login works; complete [EXTERNAL_TESTS.md](EXTERNAL_TESTS.md).
+The configuration check validates structure and placeholders. It cannot prove DNS, firewall access or certificate issuance.
 
-Caddy provides TLS and forwards host/protocol information. Uvicorn trusts forwarding headers because only the proxy can reach it through the public deployment; the catalog has no published port. Authentication also binds DPoP to the configured public origin. If you change the topology, review those assumptions. Run one catalog process: the bounded replay cache is process-local and resets on restart; it is not a multi-instance authentication design.
+After Caddy has obtained the certificate:
 
-The configured trusted issuer is the identity authority for this controlled TMDT demo. Arbitrary token-supplied issuers are rejected. This is not a general WebID-to-provider trust discovery implementation. Live issuer/WebID ownership checks and client compatibility must be confirmed before calling the system complete.
+```bash
+curl --fail https://<CATALOG_HOST>/health
+curl --fail https://<CATALOG_HOST>/ready
+curl --fail https://<CATALOG_HOST>/status
+```
 
-## Persistence, stop and restart
+- `/health` confirms that the FastAPI process is alive.
+- `/ready` returns 200 only when the catalog is operational and its dependencies are ready.
+- `/status` reports mode, participant count, graph count, dataset count and dependency state.
+
+The UI is served at `https://<CATALOG_HOST>/`. Do not expose ports 8000 or 3030 through a firewall or extra Compose port mapping.
+
+## Run the simulator from a workstation
+
+Create an ignored `.env.simulator` containing only the participant mapping used by the client:
+
+```dotenv
+EDC_DEMO_PARTICIPANTS={"urn:demo:participant:a":"<token-a>","urn:demo:participant:b":"<token-b>"}
+```
+
+Then send a snapshot:
+
+```bash
+python3 scripts/edc_http_simulator.py \
+  --catalog-url https://<CATALOG_HOST>/catalog \
+  --participant urn:demo:participant:a \
+  --env-file .env.simulator \
+  --rdf demo-data/participant-a/catalog-v1.ttl
+```
+
+The simulator requires HTTPS for remote hosts. Plain HTTP is permitted only for `localhost` or `127.0.0.1`. See [HTTP_INGESTION_CONTRACT.md](HTTP_INGESTION_CONTRACT.md) for the wire contract.
+
+## Persistence and restart
 
 ```bash
 docker compose down
 docker compose up -d
 ```
 
-The `fuseki-data` named volume mounts `/fuseki`; the assembler stores TDB2 at `/fuseki/databases/solid`. Ordinary `down` retains data and Caddy's certificate volumes. **Do not use `down --volumes` on the live project** unless intentionally discarding all indexed metadata/certificates. Keep the same Compose project name; changing it creates different volumes.
+The named `fuseki-data` volume stores `/fuseki`, including TDB2 at `/fuseki/databases/catalog`. Ordinary `down` retains it. `docker compose down --volumes` permanently removes the index and Caddy volumes; use it only when intentionally resetting the demonstration.
 
-The first Fuseki start writes authentication configuration into its persistent volume. Changing `.env` alone may not rotate the stored admin password. For rotation, stop the stack, back up the volume, follow the image's Shiro configuration procedure, then update the catalog password and restart. Do not remove the data volume to rotate credentials.
+Keep the same Compose project name. A different project name creates different named volumes and will look like an empty catalog.
 
-## Backup and recovery
+## Token rotation and participant changes
 
-For this small demo, schedule a stopped-volume backup rather than copying an active TDB2 database. Stop catalog and Fuseki, archive the named volume with your institution's Docker-volume backup tool, and restart. Record the image version/digest and configuration with the backup. Store `.env` and the persisted Shiro file in restricted backup storage because they contain credentials. Test restore into a separate project/volume before relying on it.
+Edit `EDC_DEMO_PARTICIPANTS` in `.env`, then recreate the catalog container:
 
-The original metadata remains in participant Pods, so the index can also be rebuilt by authorized republication. This does not replace backups of system configuration or unrelated future model graphs. Never mount the same TDB2 volume into two running Fuseki processes.
+```bash
+python3 scripts/check_config.py
+docker compose up -d --force-recreate catalog
+```
 
-## Logs and updates
+The old token stops working after the restarted catalog loads the new mapping. Changing a participant URI creates a different graph identity; it does not rename or delete the old graph. Plan identity changes before publishing, or reset the demo index deliberately.
+
+## Logs and troubleshooting
 
 ```bash
 docker compose logs --tail=100 catalog fuseki reverse-proxy
+```
+
+Common cases:
+
+- `401 invalid_credentials`: the bearer token does not match the deployed mapping.
+- `415 unsupported_media_type`: use a supported RDF content type or a recognized simulator file extension.
+- `422 validation_failed`: inspect the returned validation errors; the last valid graph remains stored.
+- `502 store_write_failed`: inspect catalog-to-Fuseki connectivity and credentials.
+- `/ready` returns 503: inspect the dependency object and both catalog and Fuseki logs.
+- certificate failure: verify DNS, ports 80/443, the hostname and Caddy logs.
+
+## Backup and update
+
+For a small demonstration, take a stopped-volume backup with the institution's Docker-volume backup procedure. Stop writes and Fuseki before copying TDB2 files, and test restoration into a separate Compose project. Store `.env` in restricted backup storage because it contains all demo credentials.
+
+Before updating:
+
+```bash
 git pull --ff-only
+python3 scripts/check_config.py
+docker compose config --quiet
 docker compose up -d --build
 ```
 
-Take a backup before an update. Run the unit and disposable integration checks first. Record `git rev-parse HEAD` and `docker compose images`. Pin reviewed image digests for a scheduled presentation once the target platform is verified. A mutable image tag is not a supply-chain reproducibility guarantee.
-
-If readiness fails, check registry permissions/URLs and internal Fuseki health. If publication is 401, inspect the sanitized request capture and issuer/audience/DPoP fields. Never switch the public service to trusted headers to get past an authentication failure.
+Record the deployed commit and image versions for the presentation. Re-run the acceptance checklist in [EXTERNAL_TESTS.md](EXTERNAL_TESTS.md).
 
 ## References
 
-[Fuseki configuration](https://jena.apache.org/documentation/fuseki2/fuseki-configuration.html), [image persistence and operations](https://github.com/stain/jena-docker/tree/master/jena-fuseki), [Caddy automatic HTTPS](https://caddyserver.com/docs/automatic-https).
+- [Caddy automatic HTTPS](https://caddyserver.com/docs/automatic-https)
+- [Apache Jena Fuseki configuration](https://jena.apache.org/documentation/fuseki2/fuseki-configuration.html)
+- [Fuseki Docker image operations](https://github.com/stain/jena-docker/tree/master/jena-fuseki)

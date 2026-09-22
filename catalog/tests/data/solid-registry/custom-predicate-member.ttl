@@ -1,4 +1,0 @@
-@prefix schema: <https://schema.org/> .
-
-<#group>
-    schema:member <https://pod.example/alice/profile/card#me> .

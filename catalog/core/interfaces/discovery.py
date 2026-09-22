@@ -3,6 +3,10 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
+class InvalidDatasetIdError(ValueError):
+    """Raised when a caller supplies an unsafe or non-absolute dataset IRI."""
+
+
 @dataclass(frozen=True)
 class DatasetResult:
     dataset_id: str
@@ -31,7 +35,7 @@ class CatalogStatus:
     operational: bool
     dataset_count: int = 0
     graph_count: int = 0
-    registry_reachable: bool | None = None
+    participant_count: int = 0
     detail: str | None = None
     dependencies: dict[str, object] | None = None
 

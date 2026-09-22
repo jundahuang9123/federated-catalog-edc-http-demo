@@ -12,22 +12,26 @@ from fastapi.staticfiles import StaticFiles
 
 from core.config import load_active_mode
 from core.deployment import validate_deployment
+from core.interfaces.discovery import InvalidDatasetIdError
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_CORS_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+DEFAULT_CORS_ORIGINS = ""
 
 
 def _as_dict(value: object) -> dict[str, object]:
     return asdict(value) if is_dataclass(value) else dict(value)  # type: ignore[arg-type]
 
 
-def _readiness_payload(mode_name: str, status_payload: dict[str, object]) -> tuple[bool, dict[str, object]]:
+def _readiness_payload(
+    mode_name: str, status_payload: dict[str, object]
+) -> tuple[bool, dict[str, object]]:
     dependencies = status_payload.get("dependencies") or {}
     fuseki_ready = bool(dependencies.get("fuseki")) if isinstance(dependencies, dict) else False
-    registry_value = dependencies.get("registry") if isinstance(dependencies, dict) else None
-    registry_ready = registry_value is not False
-    ready = bool(status_payload.get("operational")) and fuseki_ready and registry_ready
+    dependencies_ready = not (
+        isinstance(dependencies, dict) and any(value is False for value in dependencies.values())
+    )
+    ready = bool(status_payload.get("operational")) and fuseki_ready and dependencies_ready
     return ready, {"mode": mode_name, "ready": ready, "dependencies": dependencies}
 
 
@@ -38,24 +42,30 @@ def _env_float(name: str, default: float) -> float:
     try:
         return max(0.0, float(raw_value))
     except ValueError:
-        logger.warning("Invalid numeric environment value", extra={"name": name, "value": raw_value})
+        logger.warning(
+            "Invalid numeric environment value",
+            extra={"environment_variable": name, "value": raw_value},
+        )
         return default
 
 
-def _solid_fuseki_unavailable(mode_name: str, dependencies: object) -> bool:
-    return (
-        mode_name == "solid"
-        and isinstance(dependencies, dict)
-        and dependencies.get("fuseki") is False
-    )
+def _fuseki_unavailable(dependencies: object) -> bool:
+    return isinstance(dependencies, dict) and dependencies.get("fuseki") is False
 
 
-def _log_startup_status(mode_name: str, status_payload: dict[str, object]) -> tuple[bool, dict[str, object]]:
+def _log_startup_status(
+    mode_name: str, status_payload: dict[str, object]
+) -> tuple[bool, dict[str, object]]:
     ready, payload = _readiness_payload(mode_name, status_payload)
     dependencies = payload["dependencies"]
     logger.info("Catalog startup dependency status", extra={"mode": mode_name, **payload})
-    if isinstance(dependencies, dict) and dependencies.get("registry") is False:
-        logger.warning("Solid registry is not reachable at startup", extra={"mode": mode_name})
+    if isinstance(dependencies, dict):
+        for dependency, value in dependencies.items():
+            if value is False:
+                logger.warning(
+                    "Catalog dependency is not ready",
+                    extra={"mode": mode_name, "dependency": dependency},
+                )
     return ready, payload
 
 
@@ -97,7 +107,7 @@ def _startup_checks(mode) -> None:
         ready, payload = _log_startup_status(mode.name, status_payload)
         dependencies = payload["dependencies"]
 
-        if not _solid_fuseki_unavailable(mode.name, dependencies):
+        if not _fuseki_unavailable(dependencies):
             break
 
         remaining_seconds = deadline - time.monotonic()
@@ -124,7 +134,7 @@ def create_app() -> FastAPI:
         _startup_checks(mode)
         yield
 
-    app = FastAPI(title="Dual-Substrate Federated Catalog", lifespan=lifespan)
+    app = FastAPI(title="Federated Catalog HTTP Ingestion Demo", lifespan=lifespan)
     _configure_cors(app)
     app.include_router(mode.ingest.routes())
 
@@ -150,7 +160,17 @@ def create_app() -> FastAPI:
 
     @app.get("/datasets/detail", response_model=None)
     def dataset_detail(dataset_id: str = Query(...)):
-        detail = mode.discovery.get_dataset(dataset_id)
+        try:
+            detail = mode.discovery.get_dataset(dataset_id)
+        except InvalidDatasetIdError as exc:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "error": "invalid_dataset_id",
+                    "detail": str(exc),
+                    "stage": "discovery",
+                },
+            )
         if detail is None:
             return JSONResponse(
                 status_code=404,

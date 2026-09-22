@@ -1,7 +1,7 @@
 [project]
-name = "federated-catalog"
+name = "federated-catalog-http-demo"
 version = "0.1.0"
-description = "Push-based dual-substrate federated catalog for Solid and EDC"
+description = "Push-based federated catalog with an EDC HTTP adapter simulator"
 requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.115",
@@ -10,8 +10,6 @@ dependencies = [
   "rdflib>=7",
   "pyshacl>=0.26",
   "httpx>=0.27",
-  "pyjwt[crypto]>=2.8",
-  "pyyaml>=6",
 ]
 
 [project.optional-dependencies]

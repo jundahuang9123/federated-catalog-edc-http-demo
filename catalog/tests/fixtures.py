@@ -5,7 +5,7 @@ import re
 from rdflib import DCTERMS, RDF, Graph, Namespace
 
 from core.interfaces.store import CatalogStore
-from modes.solid.store import participant_from_graph_uri
+from core.shared.participant_graph import participant_from_graph_uri
 
 DCAT = Namespace("http://www.w3.org/ns/dcat#")
 
@@ -42,18 +42,6 @@ INVALID_SHACL_TURTLE = """
     dct:title "Missing distribution" ;
     dcat:contactPoint <https://example.org/profile/card#me> .
 """
-
-
-class FakeRegistry:
-    def __init__(self, members: set[str], reachable: bool = True) -> None:
-        self.members = members
-        self.reachable = reachable
-
-    def is_member(self, participant_id: str) -> bool:
-        return participant_id in self.members
-
-    def registry_reachable(self) -> bool:
-        return self.reachable
 
 
 class MemoryCatalogStore(CatalogStore):
@@ -96,7 +84,6 @@ class MemoryCatalogStore(CatalogStore):
                 if dataset is None:
                     continue
                 title = next(graph.objects(dataset, DCTERMS.title), None)
-                provider = next(graph.objects(dataset, DCTERMS.publisher), None)
                 subjects = {dataset}
                 subjects.update(graph.objects(dataset, DCAT.distribution))
                 for subject in subjects:
@@ -109,11 +96,7 @@ class MemoryCatalogStore(CatalogStore):
                                 "o": str(obj),
                                 "title": str(title) if title else None,
                                 "type": str(DCAT.Dataset),
-                                "provider": (
-                                    str(provider)
-                                    if provider
-                                    else participant_from_graph_uri(graph_id)
-                                ),
+                                "provider": participant_from_graph_uri(graph_id),
                             }
                         )
             return rows
@@ -123,13 +106,12 @@ class MemoryCatalogStore(CatalogStore):
             graph = Graph().parse(data=rdf_payload, format="turtle")
             for dataset in graph.subjects(RDF.type, DCAT.Dataset):
                 title = next(graph.objects(dataset, DCTERMS.title), None)
-                provider = next(graph.objects(dataset, DCTERMS.publisher), None)
                 rows.append(
                     {
                         "graph": graph_id,
                         "dataset": str(dataset),
                         "title": str(title) if title else None,
-                        "provider": str(provider) if provider else participant_from_graph_uri(graph_id),
+                        "provider": participant_from_graph_uri(graph_id),
                     }
                 )
         return rows

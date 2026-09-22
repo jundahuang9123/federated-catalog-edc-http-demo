@@ -8,7 +8,7 @@ const state = {
 const el = {
   modeValue: document.querySelector("#modeValue"),
   datasetCount: document.querySelector("#datasetCount"),
-  registryStatus: document.querySelector("#registryStatus"),
+  participantConfigStatus: document.querySelector("#participantConfigStatus"),
   fusekiStatus: document.querySelector("#fusekiStatus"),
   searchInput: document.querySelector("#searchInput"),
   refreshButton: document.querySelector("#refreshButton"),
@@ -67,7 +67,7 @@ async function loadStatus() {
 
   el.modeValue.textContent = status.mode || "-";
   el.datasetCount.textContent = status.dataset_count ?? "-";
-  setStatusValue(el.registryStatus, dependencies.registry);
+  setStatusValue(el.participantConfigStatus, dependencies.participant_config);
   setStatusValue(el.fusekiStatus, dependencies.fuseki);
 }
 

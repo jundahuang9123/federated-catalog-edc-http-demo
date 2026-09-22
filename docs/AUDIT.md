@@ -1,37 +1,64 @@
-# Baseline audit — 2026-09-15
+# Implementation audit
 
-Upstream catalog: `632e735a50a2a709cd31a10be33aae5a0ab12bd2`.
-Upstream publisher: `6485e30c8daaafcdc4b1de2a6e3f712f48dc025e`.
-ConstructDCAT vocabulary: `2effb755897b99342f8405afac96425f6c13649c`.
+## Review target
 
-Before changes: catalog 36 tests passed; publisher 9 tests passed and production build passed. Local Python 3.11.2; Node 25.9.0 (outside Inrupt's supported range; deployment/CI use Node 22). Existing publisher installation reports 12 advisories (3 moderate, 9 high); audit and remediation tracked below.
+This fork narrows the earlier multi-mode catalog and browser publisher demonstrator to one deployable path:
 
-## Blockers found before architecture changes
+```text
+simulated EDC-side HTTP adapter -> POST /catalog -> validation -> Fuseki
+```
 
-- Compose exposes Fuseki, uses development credentials, has no named persistent volume, and requires a mode profile.
-- Graph replacement uses DELETE followed by POST; failed writes can destroy the previous snapshot. Replace via Graph Store PUT.
-- Registry refresh failure reuses stale members indefinitely. Publication must fail closed after expiry; production TTL defaults to zero.
-- Authentication accepts token-supplied issuers, does not require cnf.jkt, and does not verify ath or replay. Pin the TMDT issuer and harden DPoP before a public run.
-- User SPARQL endpoint and UI are absent.
-- Docker daemon was unavailable at initial audit. Startup, restart persistence and real Fuseki queries remain unverified until the integration suite runs.
-- Real browser-to-TMDT authentication, Pod reads, registry accessibility, DNS and HTTPS require infrastructure details. Unit tests do not establish live interoperability.
+The audit standard is the claim in [REQUIREMENTS.md](REQUIREMENTS.md). The tool demonstrates the final HTTP/DCAT ingestion boundary only. Eclipse EDC, DSP, negotiation, policy enforcement, and EDC control/data planes remain outside the implementation and must not be inferred from a successful request.
 
-Existing architecture retained: FastAPI mode registration, registry contract, SHACL pipeline, graph naming, discovery and publisher authenticated session.fetch. EDC remains a non-operational stub. No Solid server is added to production.
+## Architecture decisions
 
-## Implemented verification
+- The only catalog mode is `http-demo`.
+- The deployed stack uses one `CATALOG_HOST`; no publisher hostname is required.
+- `EDC_DEMO_PARTICIPANTS` is an explicit participant URI to demo-token mapping.
+- The bearer token determines the participant. The reverse proxy strips caller-supplied participant identity headers.
+- The named graph is derived from the authenticated participant URI.
+- SHACL validation precedes storage.
+- Graph Store `PUT` replaces one participant graph without a preceding delete.
+- Discovery derives provider identity from graph ownership rather than untrusted RDF statements.
+- Fuseki has a persistent volume and no public port or SPARQL Update service.
+- Public SPARQL is restricted to bounded SELECT and ASK.
+- The push-side artifact is a command-line simulator with an explicit non-EDC disclaimer.
 
-Local implementation checks: 75 catalog tests passed; 9 publisher tests passed; publisher production build and lint passed. Production and integration Compose files parse successfully. Tests use an actual RDF dataset/query engine behind the HTTP transport for semantic query and snapshot checks; they do not substitute for a real Fuseki persistence test.
+## Security and trust findings
 
-Added coverage includes semantic cross-participant discovery, dataset detail, snapshot replacement, model-graph preservation, SHACL rejection preserving prior state, unregistered rejection, SELECT/ASK JSON bindings and limits, rejected update/remote operations, DPoP missing/mismatched binding fields, replay, malformed tokens and public-URL binding.
+The configured tokens are shared demo secrets. Production configuration validation requires at least two unique values with 32 random bytes represented as hexadecimal. Tokens do not carry claims, prove an EDC participant context, or convey contract/policy evidence. Compromise of one token permits replacement of that participant's catalog graph until the credential is rotated.
 
-The publisher dependency audit initially reported 12 advisories. After reviewing the [Inrupt migration notes](https://github.com/inrupt/solid-client-authn-js/releases), the demo uses Inrupt browser authentication 5.0.0 and Vitest 4.1.11. Inrupt 4 replaces the unmaintained OIDC dependency while preserving this application's public session API; Inrupt 5 requires Node 22/24. The final install reports zero npm advisories. The existing login/session.fetch flow remains, with real TMDT verification still required.
+Graph isolation does not depend on `dct:publisher` in the submitted RDF. The public proxy removes caller-supplied participant identity headers, and the application rejects a conflicting identity header if reached directly. Fuseki credentials and participant tokens remain server-side.
 
-The local Docker engine could not be started because computer-use permission was unavailable. The [GitHub Actions integration run](https://github.com/jundahuang9123/solid-federated-catalog-demo/actions/runs/34944904684) instead passed on Linux: real Fuseki 5.1.0 startup, publication, discovery, query, membership failure, replacement/isolation and persistence through complete container recreation. The first run exposed a readiness-probe connection-reset race; retry handling was fixed and the rerun passed. The browser SPARQL page was also exercised with offline fixtures and returned the two expected semantic matches.
+Discovery and query are publicly readable in the supplied topology. This is suitable for approved public demo metadata and unsuitable for confidential participant data without an added read-authorization design.
 
-Python dependencies are constrained to the tested environment (`catalog/constraints.txt`); publisher dependencies are locked. The production proxy image builds and Caddy validates its HTTPS configuration in CI. Compose configuration validation copies the example environment first, matching the documented operator workflow. Remote DNS/TLS and real TMDT acceptance remain pending. P10 semantic-model ingestion is intentionally deferred.
+The catalog has no revision preconditions or replay protection. Repeating a snapshot replaces the same graph; two different concurrent writes for one participant use last-committed-write semantics. A future production protocol would need explicit versioning and stronger service identity.
 
-## TMDT endpoint confirmation — 2026-09-21
+## Verification surfaces
 
-The user identified `https://solid-dataspace-test.tmdt.info/` as the portal in use. Its public config advertises the TMDT Solid provider; discovery metadata confirms issuer `https://solid-community-server.tmdt.info/`. The prototype test registry is publicly readable, and the unmodified registry contract resolves two member WebIDs. No participant account, permission or remote data was modified. The issuer and prototype registry defaults are now populated; the intended participant identities and server details remain pending.
+The repository contains automated checks for:
 
-The complete [verification run for the preceding implementation](https://github.com/jundahuang9123/solid-federated-catalog-demo/actions/runs/34971850000) passed all catalog, publisher, container persistence and production proxy/configuration checks.
+- participant configuration parsing and production guards;
+- correct token authentication and generic credential failures;
+- spoofed participant-header rejection at the application boundary;
+- valid publication, graph replacement and cross-participant isolation;
+- RDF/media-type/SHACL failures preserving prior state;
+- store failure responses;
+- discovery provider identity derived from named graphs;
+- bounded read-only SPARQL behavior;
+- simulator request headers, body, HTTPS policy and token handling;
+- root Compose integration with real Fuseki and persistence.
+
+Before presenting a particular deployment, record the tested commit, automated test results, Compose validation, server architecture, deployed URLs and the live checks in [EXTERNAL_TESTS.md](EXTERNAL_TESTS.md). Unit tests alone do not verify DNS, Caddy certificate issuance, firewall rules, remote reachability or backup restoration.
+
+## Residual limitations
+
+- The adapter is simulated; it is not connected to a real Eclipse EDC event or extension point.
+- The participant/token mapping is static until the catalog restarts.
+- Tokens are symmetric bearer credentials with no expiration or automatic rotation.
+- The index has no metadata read authorization.
+- The ingestion API accepts complete snapshots only; it has no patch, version or conflict protocol.
+- Querying occurs inside one central Fuseki dataset and does not contact participant endpoints.
+- Availability, capacity and backup objectives require measurement and institutional operations on the final server.
+
+These limits are acceptable for the stated demonstrator when they are shown with it rather than hidden behind an “EDC integration” label.

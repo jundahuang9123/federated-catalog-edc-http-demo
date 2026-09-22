@@ -3,8 +3,8 @@
 
 from __future__ import annotations
 
-import os
 import json
+import os
 from dataclasses import dataclass
 
 import httpx
@@ -18,9 +18,9 @@ class FusekiSettings:
     timeout_seconds: float = 10.0
 
     @classmethod
-    def from_env(cls) -> "FusekiSettings":
+    def from_env(cls) -> FusekiSettings:
         return cls(
-            dataset_url=os.getenv("FUSEKI_URL", "http://localhost:3030/solid"),
+            dataset_url=os.getenv("FUSEKI_URL", "http://localhost:3030/catalog"),
             username=os.getenv("FUSEKI_USER", "admin"),
             password=os.getenv("FUSEKI_PASSWORD", "admin"),
             timeout_seconds=float(os.getenv("FUSEKI_TIMEOUT_SECONDS", "10")),
@@ -73,10 +73,12 @@ class FusekiClient:
 
     def query_results(self, sparql: str, *, timeout: float, max_bytes: int) -> dict:
         with self._client.stream(
-            "POST", self._endpoint("query"),
+            "POST",
+            self._endpoint("query"),
             data={"query": sparql, "timeout": str(int(timeout * 1000))},
             headers={"Accept": "application/sparql-results+json"},
-            auth=self._auth, timeout=timeout,
+            auth=self._auth,
+            timeout=timeout,
         ) as response:
             response.raise_for_status()
             body = bytearray()
@@ -97,7 +99,7 @@ class FusekiClient:
             auth=self._auth,
         )
         if response.status_code not in {200, 201, 202, 204}:
-            raise RuntimeError(f"SPARQL query failed: {response.status_code} {response.text}")
+            raise RuntimeError(f"SPARQL query failed with HTTP {response.status_code}")
         if not response.content:
             return []
 
@@ -109,4 +111,3 @@ class FusekiClient:
                 row[key] = value.get("value")
             rows.append(row)
         return rows
-

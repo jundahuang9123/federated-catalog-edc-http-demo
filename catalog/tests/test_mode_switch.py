@@ -3,16 +3,19 @@ import pytest
 from core.config import load_active_mode
 
 
-@pytest.mark.parametrize(("mode", "expected"), [("solid", "solid"), ("edc", "edc")])
-def test_mode_switch_loads_registration(monkeypatch: pytest.MonkeyPatch, mode: str, expected: str) -> None:
+def test_mode_switch_loads_http_demo_registration(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CATALOG_MODE", "http-demo")
+    monkeypatch.setenv(
+        "EDC_DEMO_PARTICIPANTS",
+        '{"urn:demo:a":"token-a","urn:demo:b":"token-b"}',
+    )
+
+    assert load_active_mode().name == "http-demo"
+
+
+@pytest.mark.parametrize("mode", ["solid", "edc", "invalid"])
+def test_mode_switch_rejects_other_modes(monkeypatch: pytest.MonkeyPatch, mode: str) -> None:
     monkeypatch.setenv("CATALOG_MODE", mode)
-
-    assert load_active_mode().name == expected
-
-
-def test_mode_switch_rejects_invalid_mode(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("CATALOG_MODE", "invalid")
 
     with pytest.raises(RuntimeError):
         load_active_mode()
-

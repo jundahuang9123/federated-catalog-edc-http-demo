@@ -30,7 +30,7 @@ def test_fuseki_client_replaces_named_graph_and_runs_query() -> None:
     transport = httpx.MockTransport(handler)
     http_client = httpx.Client(transport=transport)
     client = FusekiClient(
-        FusekiSettings(dataset_url="http://fuseki.test/solid"),
+        FusekiSettings(dataset_url="http://fuseki.test/catalog"),
         http_client=http_client,
     )
 
@@ -38,6 +38,6 @@ def test_fuseki_client_replaces_named_graph_and_runs_query() -> None:
     rows = client.query("SELECT ?dataset WHERE { ?dataset ?p ?o }")
 
     assert [request.method for request in calls] == ["PUT", "POST"]
-    assert calls[0].url.path == "/solid/data"
-    assert calls[1].url.path == "/solid/query"
+    assert calls[0].url.path == "/catalog/data"
+    assert calls[1].url.path == "/catalog/query"
     assert rows == [{"dataset": "https://example.org/datasets/test"}]

@@ -12,4 +12,3 @@ class ValidationGate(ABC):
     @abstractmethod
     def validate(self, rdf_payload: str, *, format: str | None = None) -> ValidationResult:
         raise NotImplementedError
-

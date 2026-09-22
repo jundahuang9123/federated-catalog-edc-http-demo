@@ -1,4 +1,4 @@
-Dual-Substrate Federated Catalog
+Federated Catalog HTTP Ingestion Demo
 
 This project is intended to reuse and adapt selected assets from:
 
@@ -13,5 +13,5 @@ Citation:
   Semantic Data Catalog", 2nd Solid Symposium, 2025.
 
 Derived or adapted files are listed in CREDITS.md. They include the upstream
-SHACL shape, SHACL validation wrapper, DCAT serialization helper, Fuseki graph
-helpers, Solid registry membership-reading logic, and UI design/components.
+SHACL shape, SHACL validation wrapper, Fuseki graph helpers, and UI
+design/components.

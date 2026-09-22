@@ -1,72 +1,117 @@
-# Federated Solid Catalog — Live Demonstrator
+# Federated Catalog — EDC HTTP Boundary Demo
 
-One repository for the central catalog and participant publisher, based on the existing prototypes. The central service indexes validated metadata from external Solid Pods; it does not host participant Pods or own their original data.
+This repository demonstrates a federated catalog accepting DCAT/RDF snapshots over an authenticated HTTP boundary. A small command-line simulator acts as the last step of a hypothetical EDC-side adapter: it selects a participant credential and sends `POST /catalog`.
 
-**Status: implementation prepared; remote deployment and real TMDT Solid-OIDC verification are pending.** This is a demonstrator, not a claim of completed production authentication. See [audit and verification status](docs/AUDIT.md) and [external acceptance checklist](docs/EXTERNAL_TESTS.md).
+**Scope:** the simulator proves the HTTP/DCAT ingestion boundary that an EDC-side adapter could call. It does not implement Eclipse EDC, Dataspace Protocol (DSP), contract negotiation, policy enforcement, an EDC control plane, or an EDC data plane. The bearer tokens are demo credentials configured by the catalog operator; they are not EDC or DSP credentials.
 
-## Included
+```text
+EDC HTTP adapter simulator
+  -- Bearer token + DCAT/RDF -->  POST /catalog
+                                      |
+                                   Caddy HTTPS
+                                      |
+                               FastAPI catalog
+                          auth -> SHACL -> graph PUT
+                                      |
+                              Fuseki / persistent TDB2
+                                      |
+                     discovery API, UI and read-only SPARQL
+```
 
-- `catalog/`: existing FastAPI/Solid pipeline, registry contract, SHACL validation, discovery API/UI and EDC stub.
-- `publisher/`: existing Solid login, Pod/local RDF loading, preview and configurable remote publication.
-- Root `docker-compose.yml`: catalog + persistent Fuseki/TDB2 + Caddy HTTPS and built publisher. Only ports 80/443 are published.
-- Read-only `POST /sparql` for SELECT/ASK; query examples and results UI.
-- Deterministic BIM/IFC and AAS metadata using the real Construct-DCAT vocabulary.
-- Snapshot replacement through one Graph Store PUT, fail-closed membership refresh, DPoP binding/replay checks, and deployment configuration guards.
+The deployed service needs one DNS name. There is no participant publisher application in this demo. The command-line simulator is the push-side client.
 
-## Deploy when the server is available
+## What the demo shows
+
+- A configured token identifies one simulated participant.
+- The catalog derives graph ownership from that token. Client-supplied participant headers do not control graph ownership.
+- Valid RDF is checked against the catalog SHACL shapes and stored in one named graph per participant.
+- A later successful submission replaces that participant's snapshot while leaving other participants unchanged.
+- Discovery and bounded read-only SPARQL query all participant graphs in the materialized index.
+- Fuseki data survives an ordinary `docker compose down` and `docker compose up -d` cycle.
+
+Only public demonstration metadata belongs in this catalog. Discovery and query results are intentionally readable without per-dataset authorization.
+
+## Repository layout
+
+- `catalog/` — FastAPI ingestion, validation, discovery, UI and Fuseki client.
+- `scripts/edc_http_simulator.py` — command-line client for the simulated EDC adapter boundary.
+- `demo-data/` — two participant snapshots, an invalid payload and SPARQL examples.
+- `deploy/` — Caddy and Fuseki configuration.
+- `docker-compose.yml` — single-host HTTPS deployment with persistent Fuseki storage.
+- `docs/` — contract, architecture, deployment and demonstration runbooks.
+
+## Deploy on the demo server
+
+Prerequisites are one Linux server with Docker Compose v2, one DNS record pointing to it, and inbound ports 80/443. Then:
 
 ```bash
-git clone https://github.com/jundahuang9123/solid-federated-catalog-demo.git
-cd solid-federated-catalog-demo
+git clone <this-repository-url>
+cd federated-catalog-edc-http-demo
 cp .env.example .env
-# Fill in the two DNS hostnames, external TMDT URLs, email and a random password.
+
+# Edit .env. Generate independent secrets with:
+openssl rand -hex 32
+
 python3 scripts/check_config.py
+docker compose config --quiet
 docker compose up -d --build
 ```
 
-This private repository requires your normal GitHub authentication to clone. Set up DNS before starting Caddy. Do not use example URLs for a live run.
+Set `CATALOG_HOST` to the one catalog hostname. Set `EDC_DEMO_PARTICIPANTS` to a JSON object that maps at least two participant URIs to different tokens of 64 or more hexadecimal characters. Keep `.env` out of Git.
 
-Open `https://<CATALOG_HOST>` and `https://<PUBLISHER_HOST>`. Both hostnames may point to the same server. The publisher is a static browser application served by Caddy; the server still does not contain a Solid Pod service.
+Verify the deployment:
 
-The TMDT portal and verified login-provider defaults are documented in [the deployment guide](docs/DEPLOYMENT.md#verified-tmdt-defaults). The prototype test registry is prefilled; confirm the intended participant memberships.
+```bash
+curl --fail https://<CATALOG_HOST>/health
+curl --fail https://<CATALOG_HOST>/ready
+```
 
-## What to obtain from the supervisor
+The UI is at `https://<CATALOG_HOST>/`.
 
-- Linux server access: hostname/IP, SSH username and permitted authentication method, OS and CPU architecture, Docker/Compose availability, available memory and disk.
-- Two DNS names pointing to that server, and permission to expose ports 80/443 (or details of an institutional HTTPS proxy).
-- Exact TMDT Solid-OIDC issuer URL, registry container URL and whether the registry is publicly readable.
-- Two controlled participant WebIDs/Pods, and ideally a third unregistered test identity. Confirm ability to create/update `catalog/cat.ttl` and authorize the publisher origin.
+## Send the first two snapshots
 
-Keep passwords and private keys outside Git and chat. [DEPLOYMENT.md](docs/DEPLOYMENT.md) explains each configuration field and a suggested small-VM starting point.
+The simulator reads the token for `--participant` from `EDC_DEMO_PARTICIPANTS` in `.env` and never prints it.
 
-## Run verification
+```bash
+python3 scripts/edc_http_simulator.py \
+  --catalog-url https://<CATALOG_HOST>/catalog \
+  --participant urn:demo:participant:a \
+  --rdf demo-data/participant-a/catalog-v1.ttl
+
+python3 scripts/edc_http_simulator.py \
+  --catalog-url https://<CATALOG_HOST>/catalog \
+  --participant urn:demo:participant:b \
+  --rdf demo-data/participant-b/catalog-v1.ttl
+```
+
+An accepted response identifies the authenticated participant, assigned graph and request ID. Open the UI or request `GET /datasets` to show both participants' metadata.
+
+To demonstrate replacement, send `demo-data/participant-a/catalog-v2.ttl` with participant A's credential. To demonstrate rejection without losing the last valid snapshot, send `demo-data/invalid/invalid-catalog.ttl`.
+
+See [the complete live demo](docs/LIVE_DEMO.md) and [the HTTP ingestion contract](docs/HTTP_INGESTION_CONTRACT.md).
+
+## Validate the repository
 
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -c catalog/constraints.txt -e './catalog[dev]'
 (cd catalog && ../.venv/bin/pytest -q)
-(cd publisher && npm ci && npm test && npm run build && npm run lint)
-# Requires a running Docker engine; uses an isolated disposable test project:
-python3 scripts/integration_test.py
+.venv/bin/python -m unittest scripts.test_edc_http_simulator
+
+# Requires a running Docker engine and uses an isolated disposable project.
+.venv/bin/python scripts/integration_test.py
 ```
-
-Use Node 22 for publisher work. Unit tests do not contact TMDT. The integration script starts a small registry fixture (not a Solid server), exercises actual Fuseki, recreates containers without deleting data, then removes its own isolated test volume. GitHub Actions runs these jobs on pushes.
-
-For the original local workflows, see the component READMEs. Their Compose files are local development examples, not the root production deployment.
 
 ## Documentation
 
-- [Deployment and server handover](docs/DEPLOYMENT.md)
-- [Live demonstration sequence](docs/LIVE_DEMO.md)
-- [Architecture and trust boundaries](docs/ARCHITECTURE.md)
+- [HTTP ingestion contract](docs/HTTP_INGESTION_CONTRACT.md)
+- [Architecture and trust boundary](docs/ARCHITECTURE.md)
+- [Server deployment](docs/DEPLOYMENT.md)
+- [Live demonstration](docs/LIVE_DEMO.md)
 - [Read-only SPARQL](docs/SPARQL.md)
-- [External TMDT acceptance](docs/EXTERNAL_TESTS.md)
-- [Original requirements](docs/REQUIREMENTS.md)
+- [Acceptance checklist](docs/EXTERNAL_TESTS.md)
+- [Demo requirements](docs/REQUIREMENTS.md)
 
 ## Attribution
 
-Original catalog: [Dual-Federated-Catalog-Solid-EDC-](https://github.com/jundahuang9123/Dual-Federated-Catalog-Solid-EDC-), commit `632e735a50a2a709cd31a10be33aae5a0ab12bd2`.
-Original publisher: [solid-federated-catalog-publisher](https://github.com/jundahuang9123/solid-federated-catalog-publisher), commit `6485e30c8daaafcdc4b1de2a6e3f712f48dc025e`.
-[ConstructDCAT](https://github.com/jundahuang9123/ConstructDCAT), version 0.1.0, commit `2effb755897b99342f8405afac96425f6c13649c` (Junda Huang, CC BY 4.0), supplies the vocabulary referenced by the fixtures.
-
-The component LICENSE, NOTICE and CREDITS files retain upstream attribution, including Florian Hoelken et al.'s semantic-data-catalog work. EDC remains explicitly non-operational; semantic-model graph ingestion is deferred until the live catalog milestone is stable.
+This fork starts from [solid-federated-catalog-demo](https://github.com/jundahuang9123/solid-federated-catalog-demo) at commit `a76d422`, whose catalog derives from [Dual-Federated-Catalog-Solid-EDC-](https://github.com/jundahuang9123/Dual-Federated-Catalog-Solid-EDC-). It retains the component `LICENSE`, `NOTICE` and `CREDITS` files. The fixtures use the [ConstructDCAT](https://github.com/jundahuang9123/ConstructDCAT) vocabulary, version 0.1.0, commit `2effb755897b99342f8405afac96425f6c13649c` (Junda Huang, CC BY 4.0).

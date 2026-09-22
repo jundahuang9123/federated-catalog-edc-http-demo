@@ -1,42 +1,43 @@
+# Local catalog-only stack. The fixed credentials are intentionally limited to local demos.
+name: federated-catalog-http-demo-local
 services:
-  catalog-solid:
-    profiles: ["solid"]
+  catalog:
     build: .
     environment:
-      CATALOG_MODE: solid
-      FUSEKI_URL: http://fuseki-solid:3030/solid
-      SOLID_REGISTRY_URL: ${SOLID_REGISTRY_URL:-https://solid-community-server.tmdt.info/semanticdatacatalog/public/test/}
-      SOLID_AUTH_MODE: ${SOLID_AUTH_MODE:-oidc}
+      CATALOG_MODE: http-demo
+      EDC_DEMO_PARTICIPANTS: >-
+        {"urn:connector:participant-a":
+        "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+        "urn:connector:participant-b":
+        "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2"}
+      FUSEKI_URL: http://fuseki:3030/catalog
+      FUSEKI_USER: admin
+      FUSEKI_PASSWORD: local-demo-only
     depends_on:
-      - fuseki-solid
+      fuseki:
+        condition: service_healthy
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
 
-  catalog-edc:
-    profiles: ["edc"]
-    build: .
+  fuseki:
+    image: stain/jena-fuseki:5.1.0
     environment:
-      CATALOG_MODE: edc
-      FUSEKI_URL: http://fuseki-edc:3030/edc
-    depends_on:
-      - fuseki-edc
+      ADMIN_PASSWORD: local-demo-only
+      JVM_ARGS: -Xmx1g
+    volumes:
+      - local-index:/fuseki
+      - ../deploy/fuseki.ttl:/fuseki/config.ttl:ro
     ports:
-      - "8000:8000"
+      - "127.0.0.1:3030:3030"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          curl -fsS -u admin:$$ADMIN_PASSWORD --data-urlencode 'query=ASK {}'
+          http://localhost:3030/catalog/query > /dev/null
+      interval: 5s
+      timeout: 5s
+      retries: 30
 
-  fuseki-solid:
-    profiles: ["solid"]
-    image: stain/jena-fuseki:latest
-    environment:
-      ADMIN_PASSWORD: admin
-      FUSEKI_DATASET_1: solid
-    ports:
-      - "3031:3030"
-
-  fuseki-edc:
-    profiles: ["edc"]
-    image: stain/jena-fuseki:latest
-    environment:
-      ADMIN_PASSWORD: admin
-      FUSEKI_DATASET_1: edc
-    ports:
-      - "3032:3030"
+volumes:
+  local-index:

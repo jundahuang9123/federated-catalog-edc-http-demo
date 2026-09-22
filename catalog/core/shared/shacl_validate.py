@@ -6,11 +6,11 @@ from pathlib import Path
 from pyshacl import validate
 from rdflib import RDF, Graph, Namespace
 
-from core.interfaces.validation import ValidationGate
-from core.interfaces.validation import ValidationResult
+from core.interfaces.validation import ValidationGate, ValidationResult
 from core.shared.rdf import parse_rdf_payload
 
 SH = Namespace("http://www.w3.org/ns/shacl#")
+DCAT = Namespace("http://www.w3.org/ns/dcat#")
 
 
 def default_shape_path() -> Path:
@@ -49,11 +49,25 @@ def validate_rdf(
 ) -> ValidationResult:
     try:
         data_graph = parse_rdf_payload(rdf_payload, content_type=content_type, format=format)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - rdflib parsers raise varied exception types
         return ValidationResult(ok=False, errors=[f"RDF parse error: {exc}"])
 
     if len(data_graph) == 0:
-        return ValidationResult(ok=False, errors=["RDF payload parsed successfully but contains no triples"])
+        return ValidationResult(
+            ok=False, errors=["RDF payload parsed successfully but contains no triples"]
+        )
+
+    catalogs = set(data_graph.subjects(RDF.type, DCAT.Catalog))
+    datasets = set(data_graph.subjects(RDF.type, DCAT.Dataset))
+    if not catalogs:
+        return ValidationResult(ok=False, errors=["RDF payload contains no dcat:Catalog"])
+    if not datasets:
+        return ValidationResult(ok=False, errors=["RDF payload contains no dcat:Dataset"])
+    if not any((catalog, DCAT.dataset, None) in data_graph for catalog in catalogs):
+        return ValidationResult(
+            ok=False,
+            errors=["No dcat:Catalog links to a dataset through dcat:dataset"],
+        )
 
     try:
         shape_graph = Graph()
@@ -64,7 +78,7 @@ def validate_rdf(
             inference="rdfs",
             debug=False,
         )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - pySHACL may wrap parser and plugin failures
         return ValidationResult(ok=False, errors=[f"SHACL validation error: {exc}"])
 
     if conforms:
@@ -78,4 +92,3 @@ class ShaclValidationGate(ValidationGate):
 
     def validate(self, rdf_payload: str, *, format: str | None = None) -> ValidationResult:
         return validate_rdf(rdf_payload, shape_path=self.shape_path, format=format)
-
