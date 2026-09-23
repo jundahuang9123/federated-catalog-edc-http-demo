@@ -66,7 +66,7 @@ The new AAS/DPP scenario contains synthetic catalog metadata and placeholder dis
 | `POST /sparql` | Execute bounded SELECT/ASK queries and return JSON results |
 | `/`, `/sparql.html`, `/status.html` | Browse, query and inspect status |
 
-[HTTP ingestion contract](docs/HTTP_INGESTION_CONTRACT.md) · [SPARQL usage](docs/SPARQL.md)
+[Public search and discovery API](docs/DISCOVERY.md) · [Remote SPARQL requests](docs/SPARQL.md) · [HTTP publishing contract](docs/HTTP_INGESTION_CONTRACT.md)
 
 ## Develop and verify
 

@@ -38,6 +38,8 @@ Keyword search is case-insensitive substring matching across the combined datase
 
 `POST /sparql` accepts JSON containing SELECT or ASK, queries the central index, and returns SPARQL JSON results. It can inspect or join multiple named graphs. It does not contact remote SPARQL endpoints or allow updates. [SPARQL limits and examples](SPARQL.md).
 
+Remote readers use the same public endpoints as the browser. The [discovery API guide](DISCOVERY.md) shows how to list catalogs, search datasets and request a source-specific detail record over HTTPS. No publisher token is needed for these reads.
+
 Shared identifiers and explicit RDF links allow related records to be discovered together. A shared asset type alone does not identify the same individual asset. The [AAS/DPP scenario](AAS_DPP_SCENARIO.md) demonstrates the distinction.
 
 ## Scope and operations

@@ -9,37 +9,13 @@
   </head>
   <body>
     <main class="app-shell">
-<nav aria-label="Main navigation"><a href="/">Datasets</a> · <a href="/sparql.html">SPARQL</a> · <a href="/status.html">Status</a></nav>
+      <nav aria-label="Main navigation"><a href="/">Datasets</a> · <a href="/sparql.html">SPARQL</a> · <a href="/status.html">Status</a></nav>
       <header class="topbar">
-        <div>
-          <p class="eyebrow">EDC HTTP adapter simulation</p>
-          <h1>A catalog of publisher catalogs</h1>
-          <p>Each publisher contributes one catalog. Search all datasets together; every result retains its source.</p>
-          <p>This demo exercises a custom HTTP ingestion boundary; it does not run Eclipse EDC or DSP.</p>
-        </div>
-        <section class="status-strip" aria-label="Catalog status">
-          <div>
-            <span>Mode</span>
-            <strong id="modeValue">-</strong>
-          </div>
-          <div>
-            <span>Datasets</span>
-            <strong id="datasetCount">-</strong>
-          </div>
-          <div>
-            <span>Participants</span>
-            <strong id="participantConfigStatus">-</strong>
-          </div>
-          <div>
-            <span>Fuseki</span>
-            <strong id="fusekiStatus">-</strong>
-          </div>
-        </section>
+        <h1>Federated catalog</h1>
       </header>
 
       <section aria-label="Published catalogs" class="dataset-panel">
         <h2>Published catalogs</h2>
-        <p>Each new publication replaces only that publisher’s previous catalog.</p>
         <table><thead><tr><th>Catalog</th><th>Publisher</th><th>Datasets</th></tr></thead>
           <tbody id="catalogRows"></tbody></table>
         <p id="catalogEmpty">No catalogs published yet.</p>
@@ -90,7 +66,6 @@
             <p>Source catalog: <span id="detailCatalog" class="mono"></span></p>
             <h3>Source data</h3>
             <ul id="sourceLinks"></ul>
-            <p class="empty">These links open the publisher’s data service.</p>
             <h3>RDF Graph</h3>
             <div id="rdfGraph" class="rdf-graph"></div>
           </div>

@@ -48,7 +48,7 @@ run.addEventListener('click', async () => {
       }
       results.append(table);
       const count = document.createElement('p');
-      count.textContent = `${payload.results.bindings.length} row(s). The server applies a result limit.`;
+      count.textContent = `${payload.results.bindings.length} result(s).`;
       results.append(count);
     }
     message.textContent = `Completed in ${((performance.now() - started)/1000).toFixed(2)} seconds.`;

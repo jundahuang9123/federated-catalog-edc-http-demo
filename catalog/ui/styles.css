@@ -7,9 +7,6 @@
   --muted: #627084;
   --line: #d8e0e8;
   --accent: #00796b;
-  --accent-strong: #00574d;
-  --warn: #9a5b00;
-  --bad: #a12828;
 }
 
 * {
@@ -35,10 +32,6 @@ input {
 }
 
 .topbar {
-  display: grid;
-  grid-template-columns: minmax(280px, 1fr) auto;
-  gap: 24px;
-  align-items: end;
   margin-bottom: 18px;
 }
 
@@ -73,45 +66,11 @@ h3 {
   font-size: 15px;
 }
 
-.status-strip {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(96px, 1fr));
-  gap: 8px;
-}
-
-.status-strip div {
-  min-height: 58px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-}
-
-.status-strip span {
-  display: block;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.status-strip strong {
-  display: block;
-  margin-top: 3px;
-  color: var(--accent-strong);
-  font-size: 16px;
-}
-
-.status-strip strong.bad {
-  color: var(--bad);
-}
-
-.status-strip strong.warn {
-  color: var(--warn);
-}
-
 .toolbar {
   display: flex;
   gap: 12px;
   align-items: end;
+  margin-top: 18px;
   margin-bottom: 14px;
 }
 
@@ -162,6 +121,10 @@ button {
 
 .dataset-panel {
   overflow: hidden;
+}
+
+.dataset-panel > h2 {
+  padding: 16px 14px 12px;
 }
 
 table {
@@ -270,13 +233,8 @@ dd {
 }
 
 @media (max-width: 920px) {
-  .topbar,
   .content-grid {
     grid-template-columns: 1fr;
-  }
-
-  .status-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

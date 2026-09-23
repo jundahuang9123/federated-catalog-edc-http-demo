@@ -7,10 +7,6 @@ const state = {
 };
 
 const el = {
-  modeValue: document.querySelector("#modeValue"),
-  datasetCount: document.querySelector("#datasetCount"),
-  participantConfigStatus: document.querySelector("#participantConfigStatus"),
-  fusekiStatus: document.querySelector("#fusekiStatus"),
   searchInput: document.querySelector("#searchInput"),
   refreshButton: document.querySelector("#refreshButton"),
   datasetRows: document.querySelector("#datasetRows"),
@@ -53,28 +49,6 @@ const matchesFilter = (dataset) => {
     .map(text)
     .some((value) => value.toLowerCase().includes(query));
 };
-
-const setStatusValue = (target, value) => {
-  target.classList.remove("bad", "warn");
-  if (value === false || value === "down") target.classList.add("bad");
-  if (value === null || value === undefined) target.classList.add("warn");
-  target.textContent = value === true ? "up" : value === false ? "down" : value ?? "-";
-};
-
-async function loadStatus() {
-  const [statusResponse, readyResponse] = await Promise.all([
-    fetch("/status"),
-    fetch("/ready").catch(() => null),
-  ]);
-  const status = await statusResponse.json();
-  const ready = readyResponse ? await readyResponse.json() : {};
-  const dependencies = ready.dependencies || status.dependencies || {};
-
-  el.modeValue.textContent = status.mode || "-";
-  el.datasetCount.textContent = status.dataset_count ?? "-";
-  setStatusValue(el.participantConfigStatus, dependencies.participant_config);
-  setStatusValue(el.fusekiStatus, dependencies.fuseki);
-}
 
 async function loadCatalogs() {
   const response = await fetch("/catalogs");
@@ -219,7 +193,7 @@ function renderGraph(triples) {
 }
 
 async function refresh() {
-  await Promise.all([loadStatus(), loadCatalogs(), loadDatasets()]);
+  await Promise.all([loadCatalogs(), loadDatasets()]);
   if (state.selectedId) await selectDataset(state.selectedId, state.selectedGraph);
 }
 

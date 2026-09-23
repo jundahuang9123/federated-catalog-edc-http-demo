@@ -18,8 +18,9 @@
 
 ## Integrate and verify
 
+- [Public discovery API](DISCOVERY.md) — remote catalog and dataset search, source graphs and linked data.
+- [Remote SPARQL queries](SPARQL.md) — HTTP request and response examples, query limits and restrictions.
 - [HTTP ingestion contract](HTTP_INGESTION_CONTRACT.md) — request formats and responses.
-- [SPARQL](SPARQL.md) — query API, examples and restrictions.
 - [Requirements](REQUIREMENTS.md) — intended demo behavior.
 - [External acceptance checklist](EXTERNAL_TESTS.md) — final deployment checks.
 - [Implementation audit](AUDIT.md) — scope, limitations and what tests establish.

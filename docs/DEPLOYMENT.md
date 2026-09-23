@@ -93,6 +93,8 @@ curl --fail https://<CATALOG_HOST>/status
 
 The UI is served at `https://<CATALOG_HOST>/`. Do not expose ports 8000 or 3030 through a firewall or extra Compose port mapping.
 
+Remote readers can use the same HTTPS origin for [catalog and dataset search](DISCOVERY.md) or [SPARQL requests](SPARQL.md). These read endpoints are public and need no participant token.
+
 ## Run an individual publisher
 
 Give each participant the catalog URL and only their own token. They run `python3 publisher/server.py` locally and enter those details in the browser. See [individual setup](../publisher/README.md). The publisher is not part of the central Compose stack.
