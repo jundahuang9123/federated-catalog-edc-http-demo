@@ -50,6 +50,7 @@ Open the catalog domain and confirm `/ready` returns HTTP 200. The operator prov
 | Scenario | What it shows | Starting point |
 | --- | --- | --- |
 | BIM + AAS | Different data representations discovered through a common asset **type** | [Original two-publisher fixtures](demo-data/README.md) |
+| Linked A + B datasets | B's component and material passports explicitly reference A's frame and floor datasets | [Publisher B linked catalog](demo-data/participant-b/README.md) |
 | Group AAS API | Discovery metadata linked to the actual API records, including a DPP template | [Linked source catalog](demo-data/group-aas/README.md) |
 | AAS/DPP discovery | Three publishers' submodels describing the same individual **asset** | [Synthetic pump scenario](demo-data/aas-dpp/README.md) |
 

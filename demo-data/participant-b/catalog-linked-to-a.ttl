@@ -1,0 +1,42 @@
+# Synthetic metadata for Publisher B, linked to Publisher A's catalog-v1.ttl.
+# The example.org data locations are placeholders, not downloadable AAS payloads.
+@prefix cx: <https://w3id.org/construct-dcat#> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix ifc: <https://standards.buildingsmart.org/IFC/DEV/IFC4_3/OWL#> .
+@prefix bot: <https://w3id.org/bot#> .
+@prefix ex: <https://example.org/live-demo/> .
+
+ex:b-catalog a dcat:Catalog ;
+  dct:title "Publisher B — component and material passports"@en ;
+  dct:description "Synthetic AAS discovery metadata related to Publisher A's BIM datasets."@en ;
+  dcat:contactPoint ex:b-contact ;
+  dcat:dataset ex:b-components, ex:b-floor-materials .
+
+ex:b-components a dcat:Dataset, cx:AASDataset ;
+  dct:title "Wall component passport"@en ;
+  dct:description "Synthetic component passport metadata related to the frame export supplied by Publisher A."@en ;
+  dcat:keyword "frame", "wall", "component passport", "synthetic" ;
+  dct:relation ex:a-frame ;
+  cx:describesAssetType ifc:IfcWall ;
+  cx:usesOntology bot: ;
+  cx:hasAASSubmodel ex:b-components-submodel ;
+  dcat:distribution ex:b-components-distribution .
+
+ex:b-components-distribution a dcat:Distribution ;
+  dcat:accessURL <https://example.org/live-demo/files/b-components> ;
+  dcat:mediaType "application/json" .
+
+ex:b-floor-materials a dcat:Dataset, cx:AASDataset ;
+  dct:title "Floor material passport"@en ;
+  dct:description "Synthetic material passport metadata related to the floor package supplied by Publisher A."@en ;
+  dcat:keyword "floor", "slab", "material passport", "synthetic" ;
+  dct:relation ex:a-slabs ;
+  cx:describesAssetType ifc:IfcSlab ;
+  cx:usesOntology bot: ;
+  cx:hasAASSubmodel ex:b-floor-materials-submodel ;
+  dcat:distribution ex:b-floor-materials-distribution .
+
+ex:b-floor-materials-distribution a dcat:Distribution ;
+  dcat:accessURL <https://example.org/live-demo/files/b-floor-materials> ;
+  dcat:mediaType "application/json" .

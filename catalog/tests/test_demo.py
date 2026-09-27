@@ -117,6 +117,52 @@ def test_live_update_validation_discovery_and_semantic_query(system):
     assert all(request.method != "DELETE" for request in calls)
 
 
+def test_explicit_dataset_relations_join_sources_and_survive_independent_updates(system):
+    client, index, _ = system
+    assert publish(client, TOKEN_A, "participant-a/catalog-v1.ttl").status_code == 200
+    graph_a = index.graph(URIRef(graph_uri_for_participant(A)))
+    a_before = set(graph_a)
+    assert publish(client, TOKEN_B, "participant-b/catalog-linked-to-a.ttl").status_code == 200
+    assert set(graph_a) == a_before
+    assert len(client.get("/catalogs").json()) == 2
+    assert len(client.get("/datasets").json()) == 4
+    assert {row["provider"] for row in client.get("/datasets", params={"q": "frame"}).json()} == {
+        A,
+        B,
+    }
+    assert {row["provider"] for row in client.get("/datasets", params={"q": "floor"}).json()} == {
+        A,
+        B,
+    }
+
+    query = (DATA / "queries/publisher-links.rq").read_text()
+    response = client.post("/sparql", json={"query": query})
+    assert response.status_code == 200
+    rows = response.json()["results"]["bindings"]
+    base = "https://example.org/live-demo/"
+    assert {(row["datasetA"]["value"], row["datasetB"]["value"]) for row in rows} == {
+        (base + "a-frame", base + "b-components"),
+        (base + "a-slabs", base + "b-floor-materials"),
+    }
+    assert all(
+        row["graphA"]["value"] == graph_uri_for_participant(A)
+        and row["graphB"]["value"] == graph_uri_for_participant(B)
+        and row["catalogA"]["value"] == base + "a-catalog"
+        and row["catalogB"]["value"] == base + "b-catalog"
+        for row in rows
+    )
+
+    graph_b = index.graph(URIRef(graph_uri_for_participant(B)))
+    b_before = set(graph_b)
+    assert publish(client, TOKEN_A, "participant-a/catalog-v2.ttl").status_code == 200
+    assert set(graph_b) == b_before
+    rows = client.post("/sparql", json={"query": query}).json()["results"]["bindings"]
+    assert len(rows) == 1
+    assert rows[0]["titleA"]["value"] == "Frame export — revision 2"
+    assert rows[0]["titleB"]["value"] == "Wall component passport"
+    assert len(client.get("/datasets").json()) == 4
+
+
 @pytest.mark.parametrize(
     "query",
     [

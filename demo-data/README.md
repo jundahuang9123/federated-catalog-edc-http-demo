@@ -4,6 +4,12 @@ For a different story, see [one asset, three AAS submodel publishers](aas-dpp/RE
 
 For source-linked metadata, see the [group AAS API catalog](group-aas/README.md).
 
+For explicit connections to the A v1 catalog already published in the basic
+setup, use [Publisher B's linked passport catalog](participant-b/README.md).
+That alternative B snapshot has two datasets and a SPARQL query joining them
+to A's frame and floor datasets. Its counts differ from the original fixtures
+below.
+
 These files provide deterministic DCAT/RDF snapshots for two simulated participants. The participant identity is selected by the simulator credential; it is not taken from the fixture.
 
 ## Snapshots
