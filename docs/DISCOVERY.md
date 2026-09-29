@@ -30,7 +30,20 @@ curl --fail-with-body --show-error --silent --get \
   'https://<CATALOG_HOST>/datasets/detail'
 ```
 
-The detail response adds `types` and `triples`; its `provider` comes from the authenticated publisher's graph identity. A missing dataset returns 404. If the same dataset IRI exists in multiple publisher graphs and `graph` is omitted, the service returns 409 so that descriptions from different sources are not mixed.
+Listings and details also expose `metadata.provider_did`, `metadata.dsp_endpoint`
+and `metadata.asset_id`. These are advertised metadata, distinct from the
+authenticated `provider`. Search includes these fields. Catalog responses add
+`metadata.hierarchy`: `{id, parent_id, title, kind}` membership records, where
+`kind` is `series` or `dataset`. The [connector demo guide](CONNECTOR_DEMO.md)
+describes the RDF mapping and browser controls.
+
+The detail response adds `types` and `triples`; its `provider` comes from the authenticated publisher's graph identity. Each triple also carries `object_type` (`uri`, `bnode` or `literal`),
+`subject_type`, optional `datatype` and `language`. Literal values remain
+literals even when they look like URLs. The neighborhood contains the selected
+dataset, its distribution and locally described ConstructDCAT submodel
+resources, and its catalog/series membership path. Duplicate RDF statements
+are removed while different languages and datatypes remain distinct.
+A missing dataset returns 404. If the same dataset IRI exists in multiple publisher graphs and `graph` is omitted, the service returns 409 so that descriptions from different sources are not mixed.
 
 ## What the results represent
 

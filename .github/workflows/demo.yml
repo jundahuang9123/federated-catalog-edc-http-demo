@@ -27,6 +27,11 @@ jobs:
       - name: Run catalog tests
         run: pytest -q
         working-directory: catalog
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify resource graph model
+        run: node --test catalog/tests/graph.test.mjs
       - name: Run EDC HTTP simulator tests
         run: python -m unittest -v scripts.test_edc_http_simulator
 

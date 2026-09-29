@@ -4,6 +4,7 @@
 
 - [Illustrated architecture and workflow](workflow.html) — two interactive views: publishing and the shared-asset submodel scenario. Open the downloaded HTML in a browser; it works offline and sends no requests.
 - [Architecture](ARCHITECTURE.md) — responsibilities, ownership, replacement and combined discovery.
+- [Connector discovery presentation](CONNECTOR_DEMO.md) — advertised DID, DSP endpoint and Asset-ID, expandable metadata and the interactive graph.
 - [Live demo](LIVE_DEMO.md) — original BIM/AAS presentation steps and expected results.
 - [AAS/DPP scenario](AAS_DPP_SCENARIO.md) — mapping decisions and the plan for the group's earlier data.
 

@@ -456,3 +456,95 @@ def test_group_api_snapshot_is_findable_and_links_back_to_source(system):
         dpp_rows[0]["semanticType"]["value"]
         == "https://admin-shell.io/submodels/DigitalProductPassport/1/0"
     )
+
+
+def test_connector_metadata_and_nested_series_are_graph_scoped(system):
+    client, _, _ = system
+    assert publish(client, TOKEN_A, "participant-a/catalog-v1.ttl").status_code == 200
+    response = publish(client, TOKEN_B, "participant-b/catalog-connector-demo.ttl")
+    assert response.status_code == 200, response.json()
+    catalogs = client.get("/catalogs").json()
+    b = next(c for c in catalogs if c["provider"] == B)
+    assert b["dataset_count"] == 2
+    assert b["metadata"]["provider_did"] == "did:web:participant-b.example.org"
+    assert b["metadata"]["dsp_endpoint"] == "https://participant-b.example.org/dsp/2025-1"
+    hierarchy = b["metadata"]["hierarchy"]
+    assert len(hierarchy) == 4
+    assert sum(n["kind"] == "series" for n in hierarchy) == 2
+    assert any(
+        n["id"].endswith("b-components") and n["parent_id"].endswith("b-wall-passports")
+        for n in hierarchy
+    )
+    rows = client.get("/datasets", params={"q": "did:web:participant-b"}).json()
+    assert len(rows) == 2 and {r["provider"] for r in rows} == {B}
+    row = next(r for r in rows if r["metadata"]["asset_id"] == "b-components")
+    detail = client.get(
+        "/datasets/detail",
+        params={"dataset_id": row["dataset_id"], "graph": row["metadata"]["graph"]},
+    ).json()
+    assert detail["metadata"]["provider_did"] == b["metadata"]["provider_did"]
+    assert detail["metadata"]["asset_id"] == "b-components"
+    triples = detail["triples"]
+    assert len(triples) == len({json.dumps(t, sort_keys=True) for t in triples})
+    title = next(t for t in triples if t["predicate"].endswith("title"))
+    assert title["object_type"] == "literal" and title["language"] == "en"
+    relation = next(t for t in triples if t["predicate"].endswith("relation"))
+    assert relation["object_type"] == "uri" and relation["object"].endswith("a-frame")
+    assert any(t["predicate"].endswith("seriesMember") for t in triples)
+    assert not any("Floor material passport" == t["object"] for t in triples)
+    # A publisher's advertised DID never becomes its authenticated write identity.
+    a = next(r for r in client.get("/datasets").json() if r["provider"] == A)
+    assert a["metadata"]["provider_did"] == "did:web:participant-a.example.org"
+    assert a["metadata"]["dsp_endpoint"] != row["metadata"]["dsp_endpoint"]
+
+
+def test_connector_identity_is_not_inferred_and_literal_terms_remain_distinct(system):
+    from tests.fixtures import VALID_TURTLE
+
+    client, _, _ = system
+    payload = VALID_TURTLE.replace(
+        'dct:title "Test dataset" ;',
+        'dct:title "same"@en, "same"@de ;\n    dct:identifier "local-asset-42" ;\n    dct:description "https://example.org/a-literal", "" ;',
+    )
+    response = client.post(
+        "/catalog",
+        content=payload,
+        headers={"Content-Type": "text/turtle", "Authorization": f"Bearer {TOKEN_B}"},
+    )
+    assert response.status_code == 200
+    row = client.get("/datasets").json()[0]
+    assert row["metadata"]["asset_id"] == "local-asset-42"
+    assert row["metadata"]["provider_did"] is None
+    detail = client.get(
+        "/datasets/detail",
+        params={"dataset_id": row["dataset_id"], "graph": row["metadata"]["graph"]},
+    ).json()
+    titles = [t for t in detail["triples"] if t["predicate"].endswith("title")]
+    assert {t["language"] for t in titles} == {"en", "de"}
+    descriptions = [t for t in detail["triples"] if t["predicate"].endswith("description")]
+    assert {t["object"] for t in descriptions} == {"", "https://example.org/a-literal"}
+    assert all(t["object_type"] == "literal" for t in descriptions)
+
+
+def test_nested_members_still_validate_and_rejected_snapshot_preserves_previous(system):
+    client, index, _ = system
+    assert publish(client, TOKEN_B, "participant-b/catalog-connector-demo.ttl").status_code == 200
+    graph = index.graph(URIRef(graph_uri_for_participant(B)))
+    previous = set(graph)
+    valid = (DATA / "participant-b/catalog-connector-demo.ttl").read_text()
+    for broken in [
+        valid.replace(
+            "dcat:distribution ex:b-components-distribution .",
+            'dct:identifier "missing-distribution" .',
+        ),
+        valid.replace(
+            "ex:b-components a dcat:Dataset, cx:AASDataset", "ex:b-components a cx:AASDataset"
+        ),
+    ]:
+        response = client.post(
+            "/catalog",
+            content=broken,
+            headers={"Content-Type": "text/turtle", "Authorization": f"Bearer {TOKEN_B}"},
+        )
+        assert response.status_code == 422
+        assert set(graph) == previous

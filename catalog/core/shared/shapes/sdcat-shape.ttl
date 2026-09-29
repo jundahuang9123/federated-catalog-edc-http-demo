@@ -5,6 +5,8 @@
 @prefix dcterms: <http://purl.org/dc/terms/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
+# Membership checks require declared resource types. Each typed dataset/series
+# is validated by its target shape, avoiding recursive sh:node evaluation.
 sdcat:CatalogShape
     a sh:NodeShape ;
     sh:targetClass dcat:Catalog ;
@@ -15,13 +17,9 @@ sdcat:CatalogShape
     ] ;
     sh:property [
         sh:path dcat:dataset ;
-        sh:xone (
-            [
-                sh:node sdcat:DatasetShape
-            ]
-            [
-                sh:node sdcat:DatasetSeriesShape
-            ]
+        sh:or (
+            [ sh:class dcat:Dataset ]
+            [ sh:class dcat:DatasetSeries ]
         )
     ] .
 
@@ -101,13 +99,9 @@ sdcat:DatasetSeriesShape
     ] ;
     sh:property [
         sh:path dcat:seriesMember ;
-        sh:xone (
-            [
-                sh:node sdcat:DatasetShape
-            ]
-            [
-                sh:node sdcat:DatasetSeriesShape
-            ]
+        sh:or (
+            [ sh:class dcat:Dataset ]
+            [ sh:class dcat:DatasetSeries ]
         ) ;
         sh:minCount 1
     ] .

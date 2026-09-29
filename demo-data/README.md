@@ -12,6 +12,10 @@ below.
 
 These files provide deterministic DCAT/RDF snapshots for two simulated participants. The participant identity is selected by the simulator credential; it is not taken from the fixture.
 
+The [connector presentation](../docs/CONNECTOR_DEMO.md) adds advertised DID,
+DSP endpoint and Asset-ID metadata. Its alternate B fixture includes nested
+dataset series for the expandable explorer.
+
 ## Snapshots
 
 - `participant-a/catalog-v1.ttl` contains Frame export — revision 1 and Floor package.

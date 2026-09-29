@@ -5,15 +5,19 @@
 @prefix dct: <http://purl.org/dc/terms/> .
 @prefix ifc: <https://standards.buildingsmart.org/IFC/DEV/IFC4_3/OWL#> .
 @prefix bot: <https://w3id.org/bot#> .
+@prefix edc: <https://w3id.org/edc/v0.0.1/ns/> .
 @prefix ex: <https://example.org/live-demo/> .
 
 ex:b-catalog a dcat:Catalog ;
+  edc:participantId "did:web:participant-b.example.org" ;
+  dcat:service ex:b-dsp ;
   dct:title "Publisher B — component and material passports"@en ;
   dct:description "Synthetic AAS discovery metadata related to Publisher A's BIM datasets."@en ;
   dcat:contactPoint ex:b-contact ;
   dcat:dataset ex:b-components, ex:b-floor-materials .
 
 ex:b-components a dcat:Dataset, cx:AASDataset ;
+  edc:id "b-components" ;
   dct:title "Wall component passport"@en ;
   dct:description "Synthetic component passport metadata related to the frame export supplied by Publisher A."@en ;
   dcat:keyword "frame", "wall", "component passport", "synthetic" ;
@@ -28,6 +32,7 @@ ex:b-components-distribution a dcat:Distribution ;
   dcat:mediaType "application/json" .
 
 ex:b-floor-materials a dcat:Dataset, cx:AASDataset ;
+  edc:id "b-floor-materials" ;
   dct:title "Floor material passport"@en ;
   dct:description "Synthetic material passport metadata related to the floor package supplied by Publisher A."@en ;
   dcat:keyword "floor", "slab", "material passport", "synthetic" ;
@@ -40,3 +45,7 @@ ex:b-floor-materials a dcat:Dataset, cx:AASDataset ;
 ex:b-floor-materials-distribution a dcat:Distribution ;
   dcat:accessURL <https://example.org/live-demo/files/b-floor-materials> ;
   dcat:mediaType "application/json" .
+
+ex:b-dsp a dcat:DataService ;
+  dcat:endpointDescription "dspace:connector" ;
+  dcat:endpointURL <https://participant-b.example.org/dsp/2025-1> .

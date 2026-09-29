@@ -5,13 +5,13 @@ SELECT DISTINCT ?graphA ?catalogA ?datasetA ?titleA
                 ?graphB ?catalogB ?datasetB ?titleB
 WHERE {
   GRAPH ?graphB {
-    ?catalogB a dcat:Catalog ; dcat:dataset ?datasetB .
+    ?catalogB a dcat:Catalog ; dcat:dataset/dcat:seriesMember* ?datasetB .
     ?datasetB a dcat:Dataset ;
               dct:title ?titleB ;
               dct:relation ?datasetA .
   }
   GRAPH ?graphA {
-    ?catalogA a dcat:Catalog ; dcat:dataset ?datasetA .
+    ?catalogA a dcat:Catalog ; dcat:dataset/dcat:seriesMember* ?datasetA .
     ?datasetA a dcat:Dataset ; dct:title ?titleA .
   }
   FILTER (?graphA != ?graphB)

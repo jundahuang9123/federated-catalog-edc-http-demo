@@ -47,6 +47,57 @@ class HttpDemoDiscovery(DiscoveryService):
         self.store = store
         self.registry = registry
 
+    def _catalog_metadata(self, graph: str | None = None) -> dict:
+        graph_filter = f"VALUES ?graph {{ {_sparql_iri(graph)} }}" if graph else ""
+        rows = self.store.query(f"""
+            PREFIX dcat: <http://www.w3.org/ns/dcat#>
+            PREFIX dct: <http://purl.org/dc/terms/>
+            PREFIX edc: <https://w3id.org/edc/v0.0.1/ns/>
+            SELECT DISTINCT ?graph ?catalog ?did ?endpoint ?parent ?member ?label ?series
+            WHERE {{
+              {graph_filter}
+              GRAPH ?graph {{
+                ?catalog a dcat:Catalog .
+                OPTIONAL {{ ?catalog edc:participantId ?did . FILTER(STRSTARTS(STR(?did), "did:")) }}
+                OPTIONAL {{
+                  ?catalog dcat:service ?service .
+                  ?service dcat:endpointDescription "dspace:connector" ; dcat:endpointURL ?endpoint .
+                }}
+                OPTIONAL {{
+                  {{ ?catalog dcat:dataset ?member . BIND(?catalog AS ?parent) }}
+                  UNION {{
+                    ?catalog dcat:dataset/dcat:seriesMember* ?parent .
+                    ?parent dcat:seriesMember ?member .
+                  }}
+                  OPTIONAL {{ ?member dct:title ?label }}
+                  OPTIONAL {{ ?member a dcat:DatasetSeries . BIND(true AS ?series) }}
+                }}
+              }}
+            }} ORDER BY STR(?graph) STR(?catalog) COALESCE(STR(?did), "") COALESCE(STR(?endpoint), "") COALESCE(STR(?member), "") COALESCE(STR(?label), "")
+        """)
+        results = {}
+        for row in rows:
+            key = (str(row["graph"]), str(row["catalog"]))
+            metadata = results.setdefault(
+                key, {"provider_did": None, "dsp_endpoint": None, "hierarchy": []}
+            )
+            for source, target in (("did", "provider_did"), ("endpoint", "dsp_endpoint")):
+                if row.get(source) and metadata[target] is None:
+                    metadata[target] = str(row[source])
+            if row.get("member"):
+                node = {
+                    "id": str(row["member"]),
+                    "parent_id": str(row["parent"]),
+                    "title": str(row.get("label") or ""),
+                    "kind": "series" if str(row.get("series")) == "true" else "dataset",
+                }
+                if not any(
+                    n["id"] == node["id"] and n["parent_id"] == node["parent_id"]
+                    for n in metadata["hierarchy"]
+                ):
+                    metadata["hierarchy"].append(node)
+        return results
+
     def list_catalogs(self) -> list[CatalogResult]:
         rows = self.store.query("""
             PREFIX dcat: <http://www.w3.org/ns/dcat#>
@@ -64,6 +115,7 @@ class HttpDemoDiscovery(DiscoveryService):
               }
             } GROUP BY ?graph ?catalog ORDER BY STR(?catalog) STR(?graph)
         """)
+        metadata = self._catalog_metadata()
         return [
             CatalogResult(
                 catalog_id=str(row["catalog"]),
@@ -71,6 +123,7 @@ class HttpDemoDiscovery(DiscoveryService):
                 graph=str(row["graph"]),
                 title=str(row.get("title") or "") or None,
                 dataset_count=_int_value(row.get("count")),
+                metadata=metadata.get((str(row["graph"]), str(row["catalog"])), {}),
             )
             for row in rows
         ]
@@ -80,8 +133,9 @@ class HttpDemoDiscovery(DiscoveryService):
             """
             PREFIX dcat: <http://www.w3.org/ns/dcat#>
             PREFIX dct: <http://purl.org/dc/terms/>
+            PREFIX edc: <https://w3id.org/edc/v0.0.1/ns/>
 
-            SELECT DISTINCT ?graph ?catalog ?dataset ?title ?description ?keyword
+            SELECT DISTINCT ?graph ?catalog ?dataset ?title ?description ?keyword ?asset
             WHERE {
               GRAPH ?graph {
                 ?catalog a dcat:Catalog ; dcat:dataset/dcat:seriesMember* ?dataset .
@@ -89,12 +143,16 @@ class HttpDemoDiscovery(DiscoveryService):
                 OPTIONAL { ?dataset dct:title ?title . }
                 OPTIONAL { ?dataset dct:description ?description . }
                 OPTIONAL { ?dataset dcat:keyword ?keyword . }
+                OPTIONAL { ?dataset dct:identifier ?standardId }
+                OPTIONAL { ?dataset edc:id ?edcId }
+                BIND(COALESCE(?edcId, ?standardId) AS ?asset)
               }
             }
-            ORDER BY LCASE(STR(?title)) STR(?dataset)
+            ORDER BY LCASE(STR(?title)) STR(?dataset) COALESCE(STR(?asset), "")
             """
         )
         # One listing per source and dataset, even with multilingual/repeated literals.
+        catalog_metadata = self._catalog_metadata()
         items = {}
         for row in rows:
             graph, dataset = str(row.get("graph") or ""), str(row.get("dataset") or "")
@@ -110,13 +168,25 @@ class HttpDemoDiscovery(DiscoveryService):
                         "catalog_id": str(row.get("catalog") or ""),
                         "mode": "http-demo",
                         "search_terms": [],
+                        "asset_id": str(row.get("asset") or "") or None,
+                        **{
+                            k: v
+                            for k, v in catalog_metadata.get(
+                                (graph, str(row.get("catalog") or "")), {}
+                            ).items()
+                            if k != "hierarchy"
+                        },
                     },
                 )
             terms = items[key].metadata["search_terms"]
-            for field in ("title", "description", "keyword"):
+            for field in ("title", "description", "keyword", "asset"):
                 value = str(row.get(field) or "")
                 if value and value not in terms:
                     terms.append(value)
+        for item in items.values():
+            for field in ("provider_did", "dsp_endpoint"):
+                if item.metadata.get(field):
+                    item.metadata["search_terms"].append(item.metadata[field])
         return list(items.values())
 
     def get_dataset(self, dataset_id: str, graph: str | None = None) -> DatasetDetail | None:
@@ -127,7 +197,7 @@ class HttpDemoDiscovery(DiscoveryService):
             PREFIX dcat: <http://www.w3.org/ns/dcat#>
             PREFIX dct: <http://purl.org/dc/terms/>
 
-            SELECT DISTINCT ?graph ?catalog ?s ?p ?o ?title ?type
+            SELECT DISTINCT ?graph ?catalog ?s ?p ?o ?title ?type ?objectKind ?subjectKind ?datatype ?language
             WHERE {{
               {graph_filter}
               GRAPH ?graph {{
@@ -145,6 +215,23 @@ class HttpDemoDiscovery(DiscoveryService):
                   ?dataset dcat:distribution ?s .
                   ?s ?p ?o .
                 }}
+                UNION {{
+                  ?dataset <https://w3id.org/construct-dcat#hasAASSubmodel> ?s .
+                  ?s ?p ?o .
+                }}
+                UNION {{
+                  ?catalog dcat:dataset ?o . ?o dcat:seriesMember* ?dataset .
+                  BIND(?catalog AS ?s) BIND(dcat:dataset AS ?p)
+                }}
+                UNION {{
+                  ?catalog dcat:dataset/dcat:seriesMember* ?s .
+                  ?s dcat:seriesMember ?o . ?o dcat:seriesMember* ?dataset .
+                  BIND(dcat:seriesMember AS ?p)
+                }}
+                BIND(IF(isLiteral(?o), "literal", IF(isBlank(?o), "bnode", "uri")) AS ?objectKind)
+                BIND(IF(isBlank(?s), "bnode", "uri") AS ?subjectKind)
+                BIND(IF(isLiteral(?o), STR(datatype(?o)), "") AS ?datatype)
+                BIND(IF(isLiteral(?o), lang(?o), "") AS ?language)
               }}
             }}
             ORDER BY STR(?s) STR(?p) STR(?o)
@@ -157,15 +244,33 @@ class HttpDemoDiscovery(DiscoveryService):
             raise AmbiguousDatasetError("Dataset occurs in multiple catalogs; supply its graph")
         graph = str(rows[0].get("graph") or "")
         types = sorted({str(row["type"]) for row in rows if row.get("type")})
-        triples = [
-            RdfTriple(
-                subject=str(row.get("s") or ""),
-                predicate=str(row.get("p") or ""),
-                object=str(row.get("o") or ""),
-            )
-            for row in rows
-            if row.get("s") and row.get("p") and row.get("o")
-        ]
+        triples = sorted(
+            {
+                RdfTriple(
+                    subject=str(row["s"]),
+                    predicate=str(row["p"]),
+                    object=str(row["o"]),
+                    object_type=str(row.get("objectKind") or "uri"),
+                    subject_type=str(row.get("subjectKind") or "uri"),
+                    datatype=str(row.get("datatype") or "") or None,
+                    language=str(row.get("language") or "") or None,
+                )
+                for row in rows
+                if row.get("s") is not None
+                and row.get("p") is not None
+                and row.get("o") is not None
+            },
+            key=lambda t: (t.subject, t.predicate, t.object, t.language or "", t.datatype or ""),
+        )
+        catalog_id = str(rows[0].get("catalog") or "")
+        connector = self._catalog_metadata(graph).get((graph, catalog_id), {})
+        identifiers = {
+            t.predicate: t.object
+            for t in reversed(triples)
+            if t.subject == dataset_id
+            and t.predicate
+            in {"https://w3id.org/edc/v0.0.1/ns/id", "http://purl.org/dc/terms/identifier"}
+        }
         return DatasetDetail(
             dataset_id=dataset_id,
             title=str(rows[0]["title"]) if rows[0].get("title") else None,
@@ -174,7 +279,11 @@ class HttpDemoDiscovery(DiscoveryService):
             metadata={
                 "graph": graph,
                 "mode": "http-demo",
-                "catalog_id": str(rows[0].get("catalog") or ""),
+                "catalog_id": catalog_id,
+                "provider_did": connector.get("provider_did"),
+                "dsp_endpoint": connector.get("dsp_endpoint"),
+                "asset_id": identifiers.get("https://w3id.org/edc/v0.0.1/ns/id")
+                or identifiers.get("http://purl.org/dc/terms/identifier"),
             },
             types=types,
             triples=triples,

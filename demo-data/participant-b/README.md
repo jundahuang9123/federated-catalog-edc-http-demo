@@ -23,6 +23,13 @@ that a specific physical asset has been verified, or that the catalog assembled
 a complete AAS or DPP. The distribution URLs are placeholders; the file contains
 discovery metadata, not actual AAS submodel JSON.
 
+For the partner presentation, [catalog-connector-demo.ttl](catalog-connector-demo.ttl)
+contains the same two datasets inside Building passports → Wall passports
+groups. Both files advertise B’s DID and DSP endpoint and include per-dataset
+Asset-ID values. See [the connector demo guide](../../docs/CONNECTOR_DEMO.md)
+for the mapping, interactive graph and deployment steps. The query below
+works with either flat or nested B membership.
+
 ## Publish B
 
 From the repository root on the catalog server, select B's token from the

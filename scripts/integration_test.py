@@ -210,8 +210,37 @@ if __name__ == "__main__":
         assert graph_snapshot(PARTICIPANT_A) == a_after
         assert graph_snapshot(PARTICIPANT_B) == b_before
         assert len(query(walls)["results"]["bindings"]) == 3
+        # Exercise the partner presentation against real Fuseki, after persistence checks.
+        assert publish(TOKEN_A, "participant-a/catalog-v1.ttl")[0] == 200
+        status, payload = publish(TOKEN_B, "participant-b/catalog-connector-demo.ttl")
+        assert status == 200, payload
+        status, catalogs = request("/catalogs")
+        assert status == 200 and sum(c["dataset_count"] for c in catalogs) == 4
+        b_catalog = next(c for c in catalogs if c["provider"] == PARTICIPANT_B)
+        assert len(b_catalog["metadata"]["hierarchy"]) == 4
+        status, matches = request("/datasets?q=did%3Aweb%3Aparticipant-b")
+        assert status == 200 and len(matches) == 2
+        row = next(d for d in matches if d["metadata"]["asset_id"] == "b-components")
+        status, detail = request(
+            "/datasets/detail?dataset_id="
+            + quote(row["dataset_id"], safe="")
+            + "&graph="
+            + quote(row["metadata"]["graph"], safe="")
+        )
+        assert status == 200
+        assert detail["metadata"]["provider_did"] == "did:web:participant-b.example.org"
+        assert (
+            detail["metadata"]["dsp_endpoint"]
+            == "https://participant-b.example.org/dsp/2025-1"
+        )
+        assert any(
+            t["object_type"] == "literal" and t["language"] == "en"
+            for t in detail["triples"]
+        )
+        links = (ROOT / "demo-data/queries/publisher-links.rq").read_text()
+        assert len(query(links)["results"]["bindings"]) == 2
         print(
-            "PASS: bearer identity, SHACL, discovery, SPARQL, graph isolation, "
+            "PASS: connector metadata, nested series, typed RDF, bearer identity, SHACL, discovery, SPARQL, graph isolation, "
             "replacement, dependency failure and persistence",
             flush=True,
         )

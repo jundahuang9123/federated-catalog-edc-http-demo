@@ -18,6 +18,7 @@ class CatalogResult:
     title: str | None = None
     graph: str = ""
     dataset_count: int = 0
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -34,6 +35,10 @@ class RdfTriple:
     subject: str
     predicate: str
     object: str
+    object_type: str = "uri"
+    datatype: str | None = None
+    language: str | None = None
+    subject_type: str = "uri"
 
 
 @dataclass(frozen=True)
