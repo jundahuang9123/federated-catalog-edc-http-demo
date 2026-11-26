@@ -26,7 +26,8 @@ services:
       start_period: 90s
       retries: 3
   fuseki:
-    image: ${FUSEKI_IMAGE:-stain/jena-fuseki:5.1.0}
+    build: ./deploy/fuseki
+    image: federated-catalog-fuseki:6.3.0
     restart: unless-stopped
     environment:
       ADMIN_PASSWORD: ${FUSEKI_PASSWORD:?Set a strong Fuseki password}

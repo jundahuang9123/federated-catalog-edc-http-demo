@@ -59,7 +59,6 @@ Each production demo token must contain at least 32 random bytes encoded as 64 o
 | `CATALOG_MAX_INGEST_BYTES` | FastAPI request-body limit; default 2 MiB |
 | `CATALOG_STARTUP_WAIT_SECONDS` | Time allowed for Fuseki to become reachable |
 | `EDC_DEMO_PARTICIPANTS` | JSON mapping participant URI to its private demo bearer token |
-| `FUSEKI_IMAGE` | Fuseki image tag reviewed for this deployment |
 | `FUSEKI_PASSWORD` | Independent random hexadecimal admin password |
 | `FUSEKI_TIMEOUT_SECONDS` | Internal Fuseki request timeout |
 | `SPARQL_*` | Bounds for public read-only queries |
@@ -175,4 +174,4 @@ Record the deployed commit and image versions for the presentation. Re-run the a
 
 - [Caddy automatic HTTPS](https://caddyserver.com/docs/automatic-https)
 - [Apache Jena Fuseki configuration](https://jena.apache.org/documentation/fuseki2/fuseki-configuration.html)
-- [Fuseki Docker image operations](https://github.com/stain/jena-docker/tree/master/jena-fuseki)
+- [Fuseki main server and Shiro security](https://jena.apache.org/documentation/fuseki2/)
